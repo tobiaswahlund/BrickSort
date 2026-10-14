@@ -1,106 +1,105 @@
 # BrickSort
 
-A small AI model that recognises LEGO parts from a picture, plus a virtual
-world to try it in. Everything runs offline once it's set up.
+Recognises LEGO parts from a camera picture and sorts them on a simulated conveyor belt.
 
-**Windows only for now.** The launchers are Windows `.bat` files in `scripts/windows/`;
-the Python commands further down work the same anywhere Python, PyTorch and MuJoCo run.
+<!-- GIF: a piece dropping in the demo, the guesses appearing, then the belt sorting pieces into bins -->
+*(A short screen recording goes here.)*
 
-## Setup
+## What it does
 
-Double-click **scripts/windows/setup.bat** once. It installs Python 3.12, PyTorch,
-MuJoCo and BrickSort itself into `C:\Users\<you>\BrickSortData\venv`, and downloads
-the part library (about 160 MB).
+1. **Picks the parts to learn:** about 600 of the most common LEGO parts, from Rebrickable's part
+   lists, with the 3D models from the LDraw parts library.
+2. **Makes training pictures with physics:** each part is dropped into a MuJoCo scene and photographed,
+   with random lamps, surfaces, wear, blur and noise. Half of the pictures copy the sorting machine:
+   its belt, lamps and camera height (all set in *Machine setup*).
+3. **Mixes in real photos:** your own, corrections made in the app, and public datasets.
+4. **Trains one network with four answers:** a MobileNetV3 that says which part, which colour, which
+   category, and whether the piece is printed.
+5. **Demo:** drop a piece, see the top 5 guesses as 3D pieces you can spin, correct them; the
+   corrections are used in the next training.
+6. **Virtual sorting machine:** a camera above a moving belt finds each piece, tracks it, photographs it
+   once as it crosses the middle, and a flap sends it to a bin chosen by your rules.
+   `bricksort/sorter/hardware.py` defines the camera, belt and flap interfaces a real machine plugs
+   into; the sorting logic can't tell the simulation from real hardware.
 
-## Everyday use
+## Results
 
-Double-click **scripts/windows/Start demo.bat**.
+Evaluation in progress: a test on photos of pieces the model has never seen, drawn at random from a
+mixed tub. (The number the training prints, measured on held-back dataset photos, is optimistic:
+those photos come from the same sessions and the same physical bricks as the training photos.)
 
-1. Pick a piece in the list (type in the search box to filter), and a colour.
-2. Press **Drop it!** The piece falls onto a virtual tray with real physics,
-   so it lands differently every time. A camera above takes a picture.
-3. A window pops up with the model's top 5 part guesses (with a reference
-   picture of each) and its top 3 colour guesses. Fix the colour if needed,
-   then click the right part, or type the correct part number and press Save.
-4. Press **Retrain with my corrections** now and then. The model learns from
-   everything you've confirmed.
+## How it works
 
-**Open a real photo…** runs the same check on any photo.
-**Go through my_photos/unknown** shows each photo in that folder; when you pick
-the part, the photo is moved to `my_photos/<part number>/`.
+```mermaid
+flowchart LR
+    R[Rebrickable part lists] --> C[Pick parts]
+    L[LDraw 3D models] --> C
+    C --> S[Drop and photograph in MuJoCo<br/>belts, lamps, wear, camera effects]
+    S --> T[Train MobileNetV3<br/>part · colour · category · printed]
+    P[Real photos and corrections] --> T
+    T --> M[(Model)]
+    M --> D[Demo]
+    M --> SM
+    subgraph SM[Sorting machine]
+        direction LR
+        CAM[Camera] --> DET[Find pieces] --> TR[Track] --> REC[Recognise] --> BIN[Bin rules] --> FLAP[Flap]
+    end
+```
 
-## The virtual sorting machine
+## Quick start (Windows)
 
-Double-click **scripts/windows/Start sorting machine.bat**. Pieces ride a conveyor belt under a
-camera. The camera spots each piece, the model recognises it, your bin rules
-choose a bin, and a flap at the end of the belt sends it there. Press
-**Start**; the sliders set the speed and how often non-LEGO objects and pairs
-of pieces show up.
+```bash
+git clone https://github.com/tobiaswahlund/BrickSort.git
+```
 
-**Edit bins…** opens `bins.json`. Each bin has a name and a `when` with
-conditions, checked top to bottom (first match wins):
+1. Double-click `scripts/windows/setup.bat` (installs Python, PyTorch and MuJoCo, downloads the part library).
+2. Download the trained model, `lego_model.pt`, from the [Releases](../../releases) page into `model/`.
+3. Double-click `scripts/windows/Start demo.bat` or `Start sorting machine.bat`.
 
-| Condition | Example | Meaning |
-|---|---|---|
-| `part` | `["3001", "3626c"]` | these part numbers (look-alikes count too) |
-| `category` | `"minifig heads"` or a list | Rebrickable category contains this text |
-| `name` | `"slope"` | part name contains this text |
-| `color` | `["Black", "Red"]` | Rebrickable colour names |
-| `flat` | `true` | plates and tiles (not bricks) |
-| `min_length` / `max_length` | `6` | longest side in studs |
-| `min_width` / `max_width` | `2` | shortest side in studs |
-| `min_height` / `max_height` | `3` | height in plates (a brick is 3) |
+Everything else, including training your own model, is in [docs/USAGE.md](docs/USAGE.md).
 
-`"when": {}` matches every LEGO piece. `confidence_needed` (0.9 = 90%) is how
-sure the model must be. The **rest bin** gets: several pieces at once, pieces
-too big to be one part (stuck together), and anything the model isn't sure
-enough about. If the exact part is unsure but the category is clear, a bin
-that only asks for a category (and maybe a colour) can still take it.
-The **Not Lego** bin gets things the model is sure aren't LEGO. Photos of
-non-LEGO things in `my_photos/not_lego/` teach it this from real examples.
-Saving in the bin editor reloads the bins.
+## Hard problems and decisions
 
-The real machine later uses the same code, with `sorter/hardware.py`'s webcam
-and microcontroller (e.g. Arduino) parts in place of the virtual ones.
+- **Simulated pictures that work on real photos.** Pieces are dropped with physics, so they land the
+  way real pieces do. The training pictures copy the machine's camera (the same pixels per mm), its
+  belt and its lamps, and the plastic's shine is fitted to real photos (highlights cover 8.7% of a piece
+  in the photos, 8.9% in the renders). Colour jitter is kept gentle, so colours stay learnable.
+- **Left and right parts.** Pictures are never mirrored: a mirrored left wing is a right wing.
+- **Look-alike colours.** Light Gray and Light Bluish Gray (and a few other pairs) are counted as one
+  colour, because they can't be told apart on camera.
+- **Pieces stuck together.** A piece bigger than its guessed part could be, or several objects too close
+  for the flap to separate, goes to the rest bin rather than a wrong bin.
+- **One piece, one photo.** Dark pieces on a dark belt, and tall pieces like arches, used to look like two
+  or three objects and were photographed several times (about 1 in 10 pieces). A piece is now
+  photographed only as it crosses the middle line, and everything too close to separate is decided
+  together: in 600+ test pieces each got exactly one photo.
+- **Safe by default.** Anything the model isn't sure enough about goes to the rest bin; each bin can ask
+  for its own confidence.
 
-## Your own photos
+## Limitations and roadmap
 
-Put them in `my_photos/<part number>/<colour name>/`, for example
-`my_photos/3001/Red/` for a red 2x4 brick. Use Rebrickable's colour names
-(Black, White, Red, Blue, Yellow, Light Bluish Gray, Dark Bluish Gray, Tan,
-Reddish Brown, Dark Red, ...; capitals and spaces/underscores don't matter).
-If you don't know the colour name, put the photo straight in
-`my_photos/<part number>/`; it's then used for the shape only.
-5 to 10 photos per piece, from different sides. Any file name works
-(.jpg, .png). Photos you can't identify go in `my_photos/unknown/`.
-Keep the piece roughly in the middle of the photo: the program uses the
-centred square.
+- The sorting machine is simulated so far. The hardware interface is ready; a real webcam, belt,
+  servo flap and Arduino are next.
+- About 600 parts. Rarer parts are only recognised by category.
+- The launchers are Windows-only; the Python commands work elsewhere too.
+- The honest accuracy test (above) is still to come.
 
-Real photos count 10 times as much as simulated pictures when training.
+## Credits
 
-## Where things are
+- 3D models: [The LDraw Parts Library](https://www.ldraw.org), CC BY 2.0 / CC BY 4.0.
+- Part, colour and set data: [Rebrickable](https://rebrickable.com/downloads/).
+- Photos: "Images of LEGO bricks" (Gdańsk University of Technology,
+  [doi:10.34808/arsb-4268](https://doi.org/10.34808/arsb-4268)), CC BY 4.0, and "LEGO bricks for
+  training classification network" (Gdańsk University of Technology).
+- Scenes of many pieces: "B200 LEGO Detection Dataset" (Kaggle), CC BY-SA 4.0.
+- Physics and rendering: [MuJoCo](https://mujoco.org). Network: PyTorch / torchvision.
 
-| What | Where |
-|---|---|
-| Program code | `bricksort/` |
-| Trained model (copy this to another machine) | `model/lego_model.pt` |
-| Parts the model knows | `parts.json` (first copied from `defaults/`) |
-| Reference pictures | `reference/` |
-| Corrections made in the review window | `corrections/<part>/` |
-| Your photos | `my_photos/<part>/` |
-| Windows launchers | `scripts/windows/` |
-| Python, downloads, simulated pictures (big, re-creatable) | `C:\Users\<you>\BrickSortData\` (set `BRICKSORT_DATA` to move it) |
+Built with [Claude Code](https://claude.com/claude-code) as a pair programmer.
 
-## Commands (for the curious)
+LEGO® is a trademark of the LEGO Group of companies which does not sponsor, authorize or endorse this
+site. BrickSort is an independent project.
 
-Run from this folder with the Python in `C:\Users\<you>\BrickSortData\venv\Scripts\`
-(or any Python where you ran `pip install -e .`):
+## Licence
 
-- `python -m bricksort.catalog 300` picks the 300 most common parts (Rebrickable data)
-- `python -m bricksort.render 40` makes 40 simulated pictures per part (LDraw 3D models)
-- `python -m bricksort.train 8` trains for 8 rounds
-- `python -m bricksort.demo` opens the demo (or just `bricksort-demo`)
-- `python -m bricksort.conveyor_demo` opens the sorting machine (or `bricksort-sorter`)
-
-Data: part lists from [Rebrickable](https://rebrickable.com/downloads/),
-3D models from the [LDraw](https://www.ldraw.org) parts library.
+The code is MIT-licensed (see [LICENSE](LICENSE)). The datasets and the 3D part library keep their own
+licences, listed above.
