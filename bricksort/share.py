@@ -9,8 +9,7 @@ import zipfile
 from . import config
 
 INCLUDE = ["bricksort", "model/lego_model.pt", "reference", "parts.json", "category_parts.json",
-           "custom_parts.json", "part_properties.json", "bins.json", "belt_pieces.json", "README.md", "setup.bat",
-           "Start demo.bat", "Start sorting machine.bat", "Cut out pieces.bat", "Watch training pictures.bat",
+           "custom_parts.json", "part_properties.json", "bins.json", "belt_pieces.json", "README.md", "LICENSE", "scripts",
            "requirements.txt"]
 
 

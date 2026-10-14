@@ -3,8 +3,7 @@ rem Double-click to make the new training pictures and then train the model.
 rem You can close this window at any time (or turn the computer off).
 rem Double-click again later and it carries on where it stopped:
 rem   pictures already made are kept, and training continues from the last finished round.
-cd /d "%~dp0"
-set "PY=%USERPROFILE%\LegoSorterData\venv\Scripts\python.exe"
+call "%~dp0_env.bat" || exit /b 1
 echo Step 1 of 2: making training pictures (skips the ones already made) ...
 "%PY%" -m bricksort.render 100
 if errorlevel 1 goto failed
