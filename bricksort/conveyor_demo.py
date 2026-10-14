@@ -1,6 +1,6 @@
 ﻿"""Virtual sorting machine: pieces ride a conveyor belt under a camera and get sorted into bins.
 
-Run:  python -m legosorter.conveyor_demo
+Run:  python -m bricksort.conveyor_demo
 Bins are set in bins.json (button "Edit bins…").
 """
 import os
@@ -240,7 +240,7 @@ class ConveyorDemo(tk.Tk):
         """Open the review window (the same one as in the drop demo) on the saved pictures."""
         if self.running:
             self.toggle()
-        subprocess.Popen([sys.executable, "-m", "legosorter.demo", flag], cwd=config.PROJECT_DIR)
+        subprocess.Popen([sys.executable, "-m", "bricksort.demo", flag], cwd=config.PROJECT_DIR)
 
     def _spawn_mode_changed(self):
         if self.spawn_mode.get() == SPAWN_CHOSEN:

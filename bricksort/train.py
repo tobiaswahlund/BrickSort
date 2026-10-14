@@ -1,6 +1,6 @@
 """Train (or re-train) the recognizer on the simulated pictures + your photos and corrections.
 
-Run:  python -m legosorter.train [rounds]      (or double-click "Train.bat")
+Run:  python -m bricksort.train [rounds]      (or double-click "Train.bat")
 If a model already exists it continues from it, so re-training after a few
 corrections is quick. Progress is saved after every round: stop it any time
 (close the window), and the next start carries on from the last finished round.

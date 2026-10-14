@@ -1,10 +1,10 @@
 """Guess the colour of single-piece photos on a white background (Dataset_01), for you to check.
 
-Run:  python -m legosorter.guess_colours
+Run:  python -m bricksort.guess_colours
 Moves Dataset_01/<category>/<part>/*.jpg to _check/dataset_01_colours/<part>/<guessed colour>/.
 Look through those folders and drag any photo with a wrong colour into the right colour folder
 (make one if needed; Rebrickable colour names), or use the review window
-(python -m legosorter.colour_review, "Check colours.bat"), which moves checked pieces into my_photos.
+(python -m bricksort.colour_review, "Check colours.bat"), which moves checked pieces into my_photos.
 
 How the guess works: two independent guesses, both limited to colours this exact part was
 really made in (Rebrickable's set lists):
@@ -72,7 +72,7 @@ def guess_with_model(path, part, table):
     from .train import load_square
     import torch
     img = load_square(path)
-    x = __import__("legosorter.model", fromlist=["eval_transform"]).eval_transform(img).unsqueeze(0).to(_model.dev)
+    x = __import__("bricksort.model", fromlist=["eval_transform"]).eval_transform(img).unsqueeze(0).to(_model.dev)
     with torch.no_grad():
         probs = torch.softmax(_model.net(x)[1], 1)[0].cpu().numpy()
     ids, w = real_colors({"id": part, "colors": []}, table)

@@ -1,15 +1,27 @@
 """Where things live and the main knobs.
 
-Code, the trained model and your corrections stay in the LegoSorter folder
-(so OneDrive backs them up). Big, re-creatable things (downloads, rendered
-training pictures) go to C:\\Users\\<you>\\LegoSorterData so OneDrive doesn't
-have to sync thousands of files.
+Code, the trained model and your corrections stay in the project folder
+(so a cloud folder like OneDrive backs them up). Big, re-creatable things
+(Python, downloads, rendered training pictures) go to the data folder,
+C:\\Users\\<you>\\BrickSortData, so the cloud doesn't have to sync thousands of files.
+Set BRICKSORT_DATA to put it somewhere else. (Folders made before the rename,
+LegoSorterData or LEGOSORTER_DATA, keep working.)
 """
 import os
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
-BIG_DIR = Path(os.environ.get("LEGOSORTER_DATA", Path.home() / "LegoSorterData"))
+
+
+def _data_dir():
+    for var in ("BRICKSORT_DATA", "LEGOSORTER_DATA"):
+        if os.environ.get(var):
+            return Path(os.environ[var])
+    old = Path.home() / "LegoSorterData"
+    return old if old.exists() else Path.home() / "BrickSortData"
+
+
+BIG_DIR = _data_dir()
 
 DOWNLOADS = BIG_DIR / "downloads"
 LDRAW_ZIP = DOWNLOADS / "ldraw_complete.zip"

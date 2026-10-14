@@ -1,5 +1,5 @@
 @echo off
-rem One-time setup on a new Windows computer: installs Python and the libraries LegoSorter needs.
+rem One-time setup on a new Windows computer: installs Python and the libraries BrickSort needs.
 rem Afterwards, double-click "Start demo.bat" or "Start sorting machine.bat".
 cd /d "%~dp0"
 set "PY=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
@@ -33,7 +33,7 @@ if %errorlevel%==0 (
 
 echo.
 echo Downloading the Lego part library and part lists, about 160 MB ...
-"%VENV%\Scripts\python.exe" -c "from legosorter import catalog, ldraw; ldraw.Library(); catalog.colors(); catalog.twins(); print('Done')"
+"%VENV%\Scripts\python.exe" -c "from bricksort import catalog, ldraw; ldraw.Library(); catalog.colors(); catalog.twins(); print('Done')"
 
 echo.
 echo All set! Double-click "Start demo.bat" or "Start sorting machine.bat".

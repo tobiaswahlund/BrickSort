@@ -1,6 +1,6 @@
 """Watch the training pictures as they're being made (a separate window; doesn't slow anything down).
 
-Run:  python -m legosorter.watch
+Run:  python -m bricksort.watch
 Every second it shows the newest pictures in the renders folders, with part name and colour.
 """
 import json
@@ -35,7 +35,7 @@ def _colors():
 class Watch(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("LegoSorter – training pictures being made")
+        self.title("BrickSort – training pictures being made")
         self.configure(padx=8, pady=8)
         self.names, self.colors = _names(), _colors()
         self.info = Label(self, text="Waiting for new pictures …", font=("Segoe UI", 11))

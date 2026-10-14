@@ -1,7 +1,7 @@
 """The conveyor belt surfaces: green or black, matte or glossy.
 
 Drawn with code (no photos, so nothing to credit or licence) and saved once in
-LegoSorterData/belts/. Used by the virtual sorting machine and, so the model
+<data folder>/belts/ (see config.py). Used by the virtual sorting machine and, so the model
 sees the same belts, for some of the training pictures.
 
 Matte = fine rubbery grain that scatters light. Glossy = smooth PVC with a few

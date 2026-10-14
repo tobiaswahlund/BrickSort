@@ -1,6 +1,6 @@
 """Make the training pictures: drop every part many times and photograph it.
 
-Run:  python -m legosorter.render [images_per_part]
+Run:  python -m bricksort.render [images_per_part]
 Parts that already have enough pictures are skipped, so it's safe to re-run.
 """
 import json

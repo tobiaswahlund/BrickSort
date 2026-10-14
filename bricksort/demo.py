@@ -1,6 +1,6 @@
 """The virtual demo: choose a piece, drop it, let the camera + model guess, then review.
 
-Run:  python -m legosorter.demo
+Run:  python -m bricksort.demo
 """
 import json
 import os
@@ -52,7 +52,7 @@ def reference_photo(part_id, size):
 class Demo(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("LegoSorter – virtual demo")
+        self.title("BrickSort – virtual demo")
         self.configure(padx=10, pady=10)
         self.lib = Library()
         self.parts = catalog.load_parts()
@@ -419,7 +419,7 @@ class Demo(tk.Tk):
         q = queue.Queue()
 
         def run():
-            for cmd in (["-m", "legosorter.render"], ["-m", "legosorter.train", "3"]):
+            for cmd in (["-m", "bricksort.render"], ["-m", "bricksort.train", "3"]):
                 p = subprocess.Popen([sys.executable, *cmd], cwd=config.PROJECT_DIR, stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
                                      bufsize=1, env={**os.environ, "PYTHONIOENCODING": "utf-8"},

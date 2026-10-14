@@ -1,6 +1,6 @@
 """Download the free Rebrickable tables + LDraw library and pick the parts to learn.
 
-Run:  python -m legosorter.catalog [how_many_parts]
+Run:  python -m bricksort.catalog [how_many_parts]
 """
 import csv
 import gzip
@@ -27,7 +27,7 @@ def download(name, dest):
     dest.parent.mkdir(parents=True, exist_ok=True)
     print(f"Downloading {name} ...", flush=True)
     tmp = dest.with_suffix(dest.suffix + ".part")
-    req = urllib.request.Request(config.URLS[name], headers={"User-Agent": "LegoSorter/0.1"})
+    req = urllib.request.Request(config.URLS[name], headers={"User-Agent": "BrickSort/0.1"})
     # timeout: give up on a stalled connection instead of hanging forever (seconds per read)
     with urllib.request.urlopen(req, timeout=60) as r, open(tmp, "wb") as f:
         while chunk := r.read(1 << 20):
@@ -286,7 +286,7 @@ def build_category_set(per_category=25, lib=None):
 
 def all_lego_parts(lib=None):
     """Every plain Lego part that has an LDraw 3D model (for 'All pieces' on the virtual belt).
-    Worked out once and saved in LegoSorterData/all_parts.json."""
+    Worked out once and saved in <data folder>/all_parts.json."""
     cache = config.BIG_DIR / "all_parts.json"
     if cache.exists():
         return json.loads(cache.read_text(encoding="utf-8"))

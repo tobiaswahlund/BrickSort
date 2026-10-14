@@ -8,8 +8,8 @@ Dataset_03  "B200 LEGO Detection Dataset" (Korra P, Kaggle, CC BY-SA 4.0), synth
             -> and, for a sample of the pictures, every piece cut out using the dataset's boxes, with
                part and colour: my_photos/<part>/<colour>/
 
-Run:  python -m legosorter.import_datasets 01        (move Dataset_01)
-      python -m legosorter.import_datasets 03 [N]    (cut pieces from the first N scenes, then move all scenes)
+Run:  python -m bricksort.import_datasets 01        (move Dataset_01)
+      python -m bricksort.import_datasets 03 [N]    (cut pieces from the first N scenes, then move all scenes)
 """
 import os
 import re

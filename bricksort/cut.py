@@ -1,7 +1,7 @@
 """Cut a photo with several pieces into one picture per piece.
 
 Put photos in my_photos/_to_cut/ (pieces spread out on a plain surface, not touching).
-Run:  python -m legosorter.cut   (or double-click "Cut out pieces.bat")
+Run:  python -m bricksort.cut   (or double-click "Cut out pieces.bat")
 
 For each photo the pieces are found automatically and shown with numbered boxes.
 - Drag on the photo to add a box the finder missed; drag a box's edge or corner to resize it;
@@ -148,7 +148,7 @@ def square_crop(img, box, margin=0.05):
 class Cutter(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("LegoSorter – cut out pieces")
+        self.title("BrickSort – cut out pieces")
         self.configure(padx=10, pady=10)
         parts = catalog.load_parts()
         self.part_ids = [p["id"] for p in parts]  # suggestions; any other number can be typed

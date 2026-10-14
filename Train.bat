@@ -6,11 +6,11 @@ rem   pictures already made are kept, and training continues from the last finis
 cd /d "%~dp0"
 set "PY=%USERPROFILE%\LegoSorterData\venv\Scripts\python.exe"
 echo Step 1 of 2: making training pictures (skips the ones already made) ...
-"%PY%" -m legosorter.render 100
+"%PY%" -m bricksort.render 100
 if errorlevel 1 goto failed
 echo.
 echo Step 2 of 2: training (10 rounds; progress is saved after every round) ...
-"%PY%" -m legosorter.train 10
+"%PY%" -m bricksort.train 10
 if errorlevel 1 goto failed
 echo.
 echo All done! The sorting machine and the demo now use the new model.

@@ -1,6 +1,6 @@
 """Check the colours of the Dataset_01 photos, one piece at a time.
 
-Run:  python -m legosorter.colour_review   (or double-click "Check colours.bat")
+Run:  python -m bricksort.colour_review   (or double-click "Check colours.bat")
 
 For each piece:
   1. Pick colours: a sample of its photos (a few of every guessed colour) and buttons for the
@@ -47,7 +47,7 @@ def _candidates(folder_name):
 class ColourReview(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("LegoSorter – check colours")
+        self.title("BrickSort – check colours")
         self.configure(padx=8, pady=8)
         self.geometry("1150x860")
         self.table = catalog.colors(include_trans=True)

@@ -2,7 +2,7 @@
 stone floors and a few others. They're drawn once as pictures (textures) and put
 on the floor of the virtual world, so the piece casts a real shadow on them.
 
-Made with code (no downloads) and saved in LegoSorterData/surfaces/.
+Made with code (no downloads) and saved in <data folder>/surfaces/ (see config.py).
 """
 import numpy as np
 from PIL import Image, ImageFilter

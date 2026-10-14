@@ -1,6 +1,6 @@
 """Check before training: which pieces should be learned but have no 3D model?
 
-Run:  python -m legosorter.prepare
+Run:  python -m bricksort.prepare
 Lists every photo folder (and custom/category part) without an LDraw 3D model, with
 suggestions for a look-alike that does have one (Rebrickable's mold variants / alternates,
 and LDraw files with a similar number). Go through the list before each training: when a
