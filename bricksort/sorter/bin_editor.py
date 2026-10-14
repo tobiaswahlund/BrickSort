@@ -18,10 +18,7 @@ NUMBER_FIELDS = (("min_length", "Longest side at least (studs)"), ("max_length",
                  ("min_height", "Height at least (plates)"), ("max_height", "Height at most (plates)"))
 
 
-def describe(when):
-    if not when:
-        return "any Lego piece"
-    return ", ".join(f"{k}={', '.join(map(str, v)) if isinstance(v, list) else v}" for k, v in when.items())
+describe = rules_mod.describe
 
 
 class BinEditor(tk.Toplevel):
@@ -40,39 +37,53 @@ class BinEditor(tk.Toplevel):
         Label(self, text="Bins are checked from the top: a piece goes into the first bin it fits.\n"
                          f"'{self.rules['not_lego_bin']}' and '{self.rules['rest_bin']}' are always last.",
               justify="left").grid(row=0, column=0, columnspan=2, sticky="w")
-        self.listbox = tk.Listbox(self, width=70, height=12, exportselection=False)
-        self.listbox.grid(row=1, column=0, sticky="nsew", pady=6)
-        self.listbox.bind("<Double-Button-1>", lambda e: self.edit())
+        holder = ttk.Frame(self)
+        holder.grid(row=1, column=0, sticky="nsew", pady=6)
+        self.table = ttk.Treeview(holder, columns=("rule",), height=12, selectmode="browse")
+        self.table.heading("#0", text="Bin", anchor="w")
+        self.table.heading("rule", text="Gets", anchor="w")
+        self.table.column("#0", width=170, stretch=False)
+        self.table.column("rule", width=380)
+        sb = ttk.Scrollbar(holder, orient="vertical", command=self.table.yview)
+        self.table.configure(yscrollcommand=sb.set)
+        self.table.pack(side="left", fill="both", expand=True)
+        sb.pack(side="right", fill="y")
+        self.table.bind("<Double-Button-1>", lambda e: self.edit())
+        self.table.bind("<Delete>", lambda e: self.remove())
         buttons = ttk.Frame(self)
         buttons.grid(row=1, column=1, sticky="n", padx=(8, 0), pady=6)
-        for text, cmd in (("Add bin…", self.add), ("Edit…", self.edit), ("Remove", self.remove),
-                          ("Move up", lambda: self.move(-1)), ("Move down", lambda: self.move(+1))):
+        for text, cmd in (("Add…", self.add), ("Edit…", self.edit), ("Remove", self.remove),
+                          ("▲ Move up", lambda: self.move(-1)), ("▼ Move down", lambda: self.move(+1))):
             ttk.Button(buttons, text=text, command=cmd, width=14).pack(pady=2)
 
         conf = ttk.Frame(self)
         conf.grid(row=2, column=0, columnspan=2, sticky="w")
-        Label(conf, text="How sure the model must be (%), or the piece goes to the rest bin:").pack(side="left")
+        ttk.Label(conf, text="Confidence needed (0–100 %), below it a piece goes to the rest bin:").pack(side="left")
         self.confidence = tk.StringVar(value=str(round(self.rules["confidence_needed"] * 100)))
-        ttk.Entry(conf, textvariable=self.confidence, width=5).pack(side="left", padx=4)
+        ttk.Spinbox(conf, textvariable=self.confidence, from_=0, to=100, increment=5, width=5).pack(side="left", padx=4)
 
         bottom = ttk.Frame(self)
         bottom.grid(row=3, column=0, columnspan=2, sticky="e", pady=(10, 0))
         ttk.Button(bottom, text="Cancel", command=self.destroy).pack(side="right")
-        ttk.Button(bottom, text="Save bins", command=self.save).pack(side="right", padx=6)
+        ttk.Button(bottom, text="Save", command=self.save).pack(side="right", padx=6)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(1, weight=1)
+        self.bind("<Escape>", lambda e: self.destroy())
         self._fill()
         self.grab_set()
         self.wait_window()
 
     def _fill(self, select=None):
-        self.listbox.delete(0, "end")
-        for i, b in enumerate(self.bins, 1):
-            self.listbox.insert("end", f"{i}. {b['name']}  —  {describe(b['when'])}")
+        self.table.delete(*self.table.get_children())
+        for i, b in enumerate(self.bins):
+            self.table.insert("", "end", iid=str(i), text=f"{i + 1}. {b['name']}", values=(describe(b["when"]),))
         if select is not None and self.bins:
-            self.listbox.selection_set(select)
+            self.table.selection_set(str(select))
+            self.table.see(str(select))
 
     def _selected(self):
-        sel = self.listbox.curselection()
-        return sel[0] if sel else None
+        sel = self.table.selection()
+        return int(sel[0]) if sel else None
 
     def add(self):
         b = BinForm(self, {"name": "", "when": {}}, self.parts).result
@@ -106,14 +117,21 @@ class BinEditor(tk.Toplevel):
 
     def save(self):
         try:
-            conf = float(self.confidence.get()) / 100
-            assert 0 < conf <= 1
-        except Exception:
-            messagebox.showwarning("Check the number", "How sure the model must be: a number from 1 to 100.", parent=self)
+            conf = float(self.confidence.get().replace("%", "").replace(",", ".")) / 100
+            if not 0 <= conf <= 1:
+                raise ValueError
+        except ValueError:
+            messagebox.showwarning("Check the number", "Confidence needed: a number from 0 to 100.", parent=self)
             return
         names = [b["name"] for b in self.bins]
         if len(set(names)) != len(names):
             messagebox.showwarning("Same name twice", "Two bins have the same name; please rename one.", parent=self)
+            return
+        special = {self.rules["not_lego_bin"], self.rules["rest_bin"]}
+        if special & set(names):
+            messagebox.showwarning("Name already used", f"'{self.rules['not_lego_bin']}' and "
+                                   f"'{self.rules['rest_bin']}' are the machine's own bins; please pick "
+                                   "another name.", parent=self)
             return
         self.rules["bins"] = self.bins
         self.rules["confidence_needed"] = conf
