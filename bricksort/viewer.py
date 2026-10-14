@@ -140,7 +140,13 @@ class LookPreview(tk.Label):
             if surfaces.SORTER_BELTS.get(n) == belt:
                 self.scene.model.geom_matid[self.scene.floor] = self.scene.surface_mats[i]
         m = self.scene.model
-        self.renderer = mujoco.Renderer(m, min(self.size, 480), min(self.size, 480))
+        # drawn at twice the size and scaled down (smooth edges), with a much finer shadow map:
+        # the training scene's 2048 is plenty for small pictures but looks blocky this close up
+        big = 2 * self.size
+        m.vis.global_.offwidth = m.vis.global_.offheight = big
+        m.vis.quality.shadowsize = 8192
+        m.vis.quality.offsamples = 8
+        self.renderer = mujoco.Renderer(m, big, big)
         self.cam.lookat[:] = self.scene.data.xpos[self.scene.part_body]
         self.cam.distance = self.scene.radius * 4
         self.render()
@@ -149,7 +155,7 @@ class LookPreview(tk.Label):
         if not self.scene:
             return
         self.renderer.update_scene(self.scene.data, camera=self.cam)
-        img = Image.fromarray(self.renderer.render()).resize((self.size, self.size))
+        img = Image.fromarray(self.renderer.render()).resize((self.size, self.size), Image.LANCZOS)
         self.photo = ImageTk.PhotoImage(img)
         self.configure(image=self.photo, width=self.size, height=self.size)
 
