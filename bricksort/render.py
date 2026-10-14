@@ -256,6 +256,9 @@ def render_junk(n, rng):
 
 
 def main(n=config.IMAGES_PER_PART, only=None):
+    # when this run started: the "watch training pictures" window shows and counts only newer pictures
+    config.RENDER_RUN.parent.mkdir(parents=True, exist_ok=True)
+    config.RENDER_RUN.write_text(str(time.time()), encoding="utf-8")
     lib = Library()
     color_table = catalog.colors(include_trans=True)
     parts = catalog.add_parts_from_folders(lib)

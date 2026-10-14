@@ -26,6 +26,7 @@ BIG_DIR = _data_dir()
 DOWNLOADS = BIG_DIR / "downloads"
 LDRAW_ZIP = DOWNLOADS / "ldraw_complete.zip"
 RENDERS = BIG_DIR / "renders"            # renders/<part>/<n>.png
+RENDER_RUN = BIG_DIR / "render_run.txt"  # when the latest picture-making run started
 
 MODEL_DIR = PROJECT_DIR / "model"
 MODEL_FILE = MODEL_DIR / "lego_model.pt"
