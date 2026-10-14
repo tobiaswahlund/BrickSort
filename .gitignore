@@ -20,6 +20,12 @@ model/
 bins.json
 belt_pieces.json
 
+# Working copies of the part lists (the originals are in defaults/, see config.py)
+/parts.json
+/category_parts.json
+/custom_parts.json
+/part_properties.json
+
 # Local tools, logs and archives
 .claude/
 *.zip

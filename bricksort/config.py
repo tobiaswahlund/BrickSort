@@ -40,6 +40,22 @@ SORTED_LOG_MAX = 500                      # keep only the newest this many
 MY_PHOTOS = PROJECT_DIR / "my_photos"     # my_photos/<part>/*.jpg, my_photos/unknown/*.jpg (your own photos)
 PHOTO_TYPES = (".jpg", ".jpeg", ".jfif", ".png", ".bmp", ".webp")
 
+# The part lists ship in defaults/ and are copied to the project folder the first time: the app
+# changes the copies as you work (new parts, measurements), so those stay out of git.
+# To publish your current lists, copy them back into defaults/.
+DEFAULTS = PROJECT_DIR / "defaults"
+WORKING_COPIES = ("parts.json", "category_parts.json", "custom_parts.json", "part_properties.json")
+
+
+def _copy_defaults():
+    import shutil
+    for name in WORKING_COPIES:
+        if not (PROJECT_DIR / name).exists() and (DEFAULTS / name).exists():
+            shutil.copyfile(DEFAULTS / name, PROJECT_DIR / name)
+
+
+_copy_defaults()
+
 URLS = {
     "ldraw": "https://library.ldraw.org/library/updates/complete.zip",
     "parts": "https://cdn.rebrickable.com/media/downloads/parts.csv.gz",
