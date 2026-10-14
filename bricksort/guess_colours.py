@@ -6,12 +6,10 @@ Look through those folders and drag any photo with a wrong colour into the right
 (make one if needed; Rebrickable colour names), or use the review window
 (python -m bricksort.colour_review, "Check colours.bat"), which moves checked pieces into my_photos.
 
-How the guess works: two independent guesses, both limited to colours this exact part was
-really made in (Rebrickable's set lists):
-  1. measuring: the photo is white-balanced on its background, the piece's own pixels are
-     taken (median of its 'core'), and the closest colour is picked;
-  2. the trained model's colour answer.
-If they agree the photo goes to <part>/<colour>/; if not, to <part>/_check - A or B/.
+How the guess works: the newest trained model's colour answer, limited to colours this exact part
+was really made in (Rebrickable's set lists). Sure: the photo goes to <part>/<colour>/; not sure:
+to <part>/_check - A or B/ with its two best answers. (An older version also measured the pixels,
+see piece_colour(); on photos no model trained on, the model alone was far better: see suggest().)
 """
 import re
 import shutil
@@ -62,25 +60,43 @@ def piece_colour(path):
 _model = None
 
 
-def guess_with_model(path, part, table):
-    """The trained model's colour answer (it's right ~88% on your real photos), limited to colours
-    this part really comes in; the pixel-measuring guess is used if the model has no opinion."""
+def model_colours(path, part, table):
+    """The newest trained model's colour answers, best first, limited to colours this part really
+    comes in: [(colour name, score)], score 0..1 (shares of the allowed answers)."""
     global _model
     if _model is None:
         from .model import Recognizer
         _model = Recognizer()
     from .train import load_square
     import torch
-    img = load_square(path)
-    x = __import__("bricksort.model", fromlist=["eval_transform"]).eval_transform(img).unsqueeze(0).to(_model.dev)
+    from .model import eval_transform
+    x = eval_transform(load_square(path)).unsqueeze(0).to(_model.dev)
     with torch.no_grad():
         probs = torch.softmax(_model.net(x)[1], 1)[0].cpu().numpy()
     ids, w = real_colors({"id": part, "colors": []}, table)
     allowed = {c: p for c, p in zip(ids, w) if p >= 0.005}
-    scored = [(probs[i] * (0.2 + allowed[c]), c) for i, c in enumerate(_model.color_classes) if c in allowed]
-    if scored and max(scored)[0] > 0.02:
-        return table[max(scored)[1]][0]
-    return guess(path, part, table)
+    scored = sorted(((probs[i] * (0.2 + allowed[c]), c) for i, c in enumerate(_model.color_classes)
+                     if c in allowed), reverse=True)
+    total = sum(s for s, _ in scored) or 1
+    return [(table[c][0], s / total) for s, c in scored]
+
+
+def guess_with_model(path, part, table):
+    """The trained model's colour answer; the pixel-measuring guess if the model has no opinion."""
+    scored = model_colours(path, part, table)
+    return scored[0][0] if scored else guess(path, part, table)
+
+
+def suggest(path, part, table, sure=0.8):
+    """Colour suggestion for Check colours: the model's answer, or its two best when it isn't sure.
+    Tested on 1,500 of your set-aside photos that no model trained on (2026-10-14): the newest model
+    alone was right 96.5% of the time, the measuring guess 58.5%, the older model 54.7%; measuring and
+    model together were right 95.8% when they agreed, but agreed on only 60% of the photos. So the
+    model is used on its own. (Those photos are much like the ones it trained on, so this is optimistic.)"""
+    scored = model_colours(path, part, table)
+    if not scored:
+        return [guess(path, part, table)]
+    return [scored[0][0]] if scored[0][1] >= sure or len(scored) == 1 else [scored[0][0], scored[1][0]]
 
 
 def guess(path, part, table):
@@ -105,9 +121,9 @@ def main(root=None):
             if f.suffix.lower() not in config.PHOTO_TYPES:
                 continue
             try:
-                a, b = guess(f, part, table), guess_with_model(f, part, table)
-                # both ways agree: probably right. Otherwise a folder that says which two it could be.
-                colour = a if a == b else f"_check - {a} or {b}"
+                # the model's colour, or "_check - A or B" when it isn't sure (see suggest())
+                cands = suggest(f, part, table)
+                colour = cands[0] if len(cands) == 1 else f"_check - {cands[0]} or {cands[1]}"
             except Exception:
                 colour = "colour_not_specified"
             dest = OUT / part / colour

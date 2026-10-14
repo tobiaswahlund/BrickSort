@@ -264,6 +264,17 @@ class ColourReview(tk.Tk):
             self.mark_count.configure(text=f"{len(self.marked)} marked")
 
     # ------------------------------------------------------------------ data per piece
+    def _candidates(self, sub, f, part):
+        """Colours a photo could be: from its folder name, or for photos without a colour yet
+        (e.g. saved as 'Unknown' in Cut out pieces) a suggestion from the newest model."""
+        if sub.name != NOT_SPECIFIED or not config.MODEL_FILE.exists():
+            return _candidates(sub.name)
+        try:
+            from .guess_colours import suggest
+            return suggest(f, part, self.table)
+        except Exception:   # e.g. a photo that can't be read: no suggestion
+            return []
+
     def part_state(self):
         part = self.parts[self.i]
         if part not in self.state:
@@ -272,7 +283,7 @@ class ColourReview(tk.Tk):
                 if sub.is_dir():
                     for f in sub.iterdir():
                         if f.suffix.lower() in config.PHOTO_TYPES:
-                            cand[f.name] = _candidates(sub.name)
+                            cand[f.name] = self._candidates(sub, f, part)
                             path[f.name] = str(f)
             self.state[part] = {"stage": "pick", "selected": [], "cand": cand, "orig_cand": dict(cand),
                                 "colour": {}, "path": path, "finished": []}
@@ -291,8 +302,8 @@ class ColourReview(tk.Tk):
             if sub.is_dir():
                 for f in sub.iterdir():
                     if f.suffix.lower() in config.PHOTO_TYPES and f.name not in st["cand"]:
-                        st["cand"][f.name] = _candidates(sub.name)
-                        st.setdefault("orig_cand", {})[f.name] = _candidates(sub.name)
+                        st["cand"][f.name] = self._candidates(sub, f, part)
+                        st.setdefault("orig_cand", {})[f.name] = list(st["cand"][f.name])
                         st["path"][f.name] = str(f)
                         added += 1
         if added and st["stage"] == "done":
