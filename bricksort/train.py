@@ -1,6 +1,6 @@
 """Train (or re-train) the recognizer on the simulated pictures + your photos and corrections.
 
-Run:  python -m bricksort.train [rounds]      (or double-click "Train.bat")
+Run:  python -m bricksort.train [rounds]      (or use "Model training.bat")
 If a model already exists it continues from it, so re-training after a few
 corrections is quick. Progress is saved after every round: stop it any time
 (close the window), and the next start carries on from the last finished round.
@@ -324,7 +324,10 @@ def main(epochs=8, log=say):
     for ep in range(first, epochs + 1):
         t0, total = time.time(), 0.0
         sampler.set_epoch(ep)
-        for x, y, c, g, pr in train_dl:
+        every = max(1, len(train_dl) // 50)   # progress about every 2% (the Model training window shows it)
+        for b, (x, y, c, g, pr) in enumerate(train_dl, 1):
+            if b % every == 0:
+                log(f"  progress {b}/{len(train_dl)} (round {ep}/{epochs})")
             opt.zero_grad()
             parts_out, cols, cats, prints = net(x.to(dev))
             y, c, g, pr = y.to(dev), c.to(dev), g.to(dev), pr.to(dev)

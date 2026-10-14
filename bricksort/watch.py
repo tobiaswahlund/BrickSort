@@ -1,14 +1,14 @@
 """Look through the training pictures, to check they look right (lighting, angles, blur and smudges,
 backgrounds, the look of the plastic). A separate window; it doesn't slow the training down.
 
-Run:  python -m bricksort.watch   (or double-click "Watch training pictures.bat")
+Run:  python -m bricksort.watch   (the "Model training.bat" window has this viewer built in)
 
 Two views:
-- "Being made now": the newest pictures of the current Train.bat run, refreshed every second.
+- "Being made now": the newest pictures of the current training run, refreshed every second.
 - "All training pictures": every simulated picture the next training will use (the parts in
   parts.json and category_parts.json), page by page, for one part or all, in order or shuffled.
 Click a picture to see it big (arrow keys for the next one). A bad one can be taken out of the
-training: it's moved to <data folder>/rejected_renders/, and the next Train.bat run makes a new one.
+training: it's moved to <data folder>/rejected_renders/, and the next training run makes a new one.
 """
 import json
 import random
@@ -48,11 +48,11 @@ def _colors():
         return {}
 
 
-class Watch(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.title("BrickSort – training pictures")
-        self.configure(padx=8, pady=8)
+class TrainingPictures(ttk.Frame):
+    """The picture viewer: part of the Model training window, or a window of its own (Watch)."""
+
+    def __init__(self, master):
+        super().__init__(master)
         self.names, self.folders = _parts()
         self.colors = _colors()
         self.dirs = {}       # folder -> last modified time, to find the active ones quickly
@@ -89,8 +89,9 @@ class Watch(tk.Tk):
         self.board.bind("<Configure>", lambda e: self._layout())
         ttk.Label(self, text="Click a picture to see it big. PageUp/PageDown turn the page.", foreground=MUTED
                   ).pack(anchor="w", pady=(6, 0))
-        self.bind("<Next>", lambda e: self._turn(+1))
-        self.bind("<Prior>", lambda e: self._turn(-1))
+        top = self.winfo_toplevel()
+        top.bind("<Next>", lambda e: self._turn(+1), add="+")
+        top.bind("<Prior>", lambda e: self._turn(-1), add="+")
         self._layout()
         self.refresh()
 
@@ -142,7 +143,7 @@ class Watch(tk.Tk):
 
     # ------------------------------------------------------------------ "being made now"
     def _run_start(self):
-        """When the latest Train.bat run started making pictures (0 if never)."""
+        """When the latest training run started making pictures (0 if never)."""
         try:
             return float(config.RENDER_RUN.read_text(encoding="utf-8"))
         except (OSError, ValueError):
@@ -185,7 +186,7 @@ class Watch(tk.Tk):
                     self.total = self._count_this_run()
                 self.info.configure(text=f"{self.total:,} new training pictures in this run. Newest first."
                                     if files else "No new training pictures yet. They appear here while "
-                                                  "Train.bat makes them.")
+                                                  "a training run makes them.")
             except OSError:   # a folder changed while looking
                 pass
         self.after(1000, self.refresh)
@@ -292,6 +293,17 @@ class BigPicture(tk.Toplevel):
         path = self.files.pop(self.k)
         self.app.reject(path)
         self.show()
+
+
+class Watch(tk.Tk):
+    """The viewer on its own (the Model training window has it built in)."""
+
+    def __init__(self):
+        super().__init__()
+        self.title("BrickSort – training pictures")
+        self.configure(padx=8, pady=8)
+        self.view = TrainingPictures(self)
+        self.view.pack(fill="both", expand=True)
 
 
 def run():

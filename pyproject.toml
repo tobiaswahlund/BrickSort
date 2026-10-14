@@ -23,6 +23,7 @@ dependencies = [
 [project.gui-scripts]
 bricksort-demo = "bricksort.demo:run"
 bricksort-sorter = "bricksort.conveyor_demo:run"
+bricksort-training = "bricksort.training_app:run"
 
 [tool.setuptools.packages.find]
 include = ["bricksort*"]
