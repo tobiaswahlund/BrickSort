@@ -161,6 +161,10 @@ def render_part(lib, part, color_table, n, rng, root=None, reference=True):
     tex_path = config.BIG_DIR / "wear_textures" / f"{part['id']}.png"
     tex_path.parent.mkdir(parents=True, exist_ok=True)
     per_variant = max(1, -(-(n - have) // WEAR_VARIANTS))
+    # numbers not in use yet: a picture taken out in the viewer leaves a gap, and the new picture
+    # must not overwrite one that's still there
+    used = {int(p.name[:4]) for p in out_dir.glob("*.png") if p.name[:4].isdigit()}
+    free = (k for k in range(100000) if k not in used)
     scene = None
     try:
         for i in range(have, n):
@@ -181,7 +185,7 @@ def render_part(lib, part, color_table, n, rng, root=None, reference=True):
                     break
             if crop is None:
                 raise RuntimeError("part keeps ending up out of the camera's view")
-            crop.save(out_dir / f"{i:04d}_c{cid}.png")  # file name carries the colour
+            crop.save(out_dir / f"{next(free):04d}_c{cid}.png")  # file name carries the colour
     finally:
         if scene:
             scene.close()
