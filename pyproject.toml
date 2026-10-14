@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bricksort"
+version = "0.1.0"
+description = "Recognise LEGO parts from a camera picture and sort them on a simulated conveyor belt."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+dependencies = [
+    # 2.6+ loads model files safely (weights_only); older versions can run code from a tampered file
+    "torch>=2.6",
+    "torchvision",
+    # scene.py relies on MuJoCo details that can change between major versions
+    "mujoco>=3.2,<4",
+    "numpy",
+    "pillow",
+]
+
+[project.gui-scripts]
+bricksort-demo = "bricksort.demo:run"
+bricksort-sorter = "bricksort.conveyor_demo:run"
+
+[tool.setuptools.packages.find]
+include = ["bricksort*"]

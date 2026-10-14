@@ -587,10 +587,14 @@ class CustomPieceForm(tk.Toplevel):
         self.destroy()
 
 
-if __name__ == "__main__":
+def run():
     app = Demo()
     if "--rest" in sys.argv:      # opened from the sorting machine's buttons
         app.after(300, app.review_rest)
     elif "--spot" in sys.argv:
         app.after(300, app.spot_check)
     app.mainloop()
+
+
+if __name__ == "__main__":
+    run()

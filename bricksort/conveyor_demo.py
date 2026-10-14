@@ -464,5 +464,9 @@ class ConveyorDemo(tk.Tk):
         self._set(self.cam_view, tkimg(img, 300))
 
 
-if __name__ == "__main__":
+def run():
     ConveyorDemo().mainloop()
+
+
+if __name__ == "__main__":
+    run()

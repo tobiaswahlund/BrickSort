@@ -30,7 +30,8 @@ if %errorlevel%==0 (
     echo No NVIDIA graphics card: installing the regular version of PyTorch, about 250 MB ...
     "%PY%" -m pip install "torch>=2.6" torchvision --index-url https://download.pytorch.org/whl/cpu
 )
-"%PY%" -m pip install "mujoco>=3.2,<4" numpy pillow
+rem the rest (mujoco, numpy, pillow), and BrickSort itself as an editable install: it runs from this folder
+"%PY%" -m pip install -e "%PROJECT%"
 
 echo.
 echo Downloading the LEGO part library and part lists, about 160 MB ...
