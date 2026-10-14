@@ -10,6 +10,7 @@ import sys
 import threading
 import time
 import tkinter as tk
+from pathlib import Path
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 import numpy as np
@@ -34,8 +35,14 @@ def photo(img, size):
     return ImageTk.PhotoImage(img.resize((size, size), Image.LANCZOS))
 
 
+ASSETS = Path(__file__).resolve().parent / "assets"
+
+
 def reference_image(part_id):
-    """The reference picture, or for your own pieces (no 3D model) one of your photos."""
+    """The reference picture, or for your own pieces (no 3D model) one of your photos.
+    'Several pieces' has its own picture (assets/multiple.png, rendered on the sorting machine's belt)."""
+    if (ASSETS / f"{part_id}.png").exists():
+        return Image.open(ASSETS / f"{part_id}.png")
     path = config.REFERENCE / f"{part_id}.png"
     if not path.exists():
         photos = [p for p in (config.MY_PHOTOS / part_id).rglob("*") if p.suffix.lower() in config.PHOTO_TYPES] \
