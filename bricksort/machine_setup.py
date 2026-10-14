@@ -28,7 +28,6 @@ DEFAULTS = {
     "warmth": 0.0,                   # 0 = white daylight lamps, 1 = warm yellowish bulbs
     "machine_share": 50,             # % of training pictures taken like your machine (the rest: tables, floors...)
     "real_gloss": False,             # plastic shine learned from your photos (plastic_look.py)
-    "real_texture": False,           # surface detail taken from your photos (plastic_look.py)
 }
 LIMITS = {"own_belt_mm": (10, 500), "camera_height_mm": (100, 600), "lamps": (1, 5), "lamp_height_mm": (100, 1000),
           "lamp_side_mm": (0, 500), "brightness": (0.3, 2.0), "warmth": (0.0, 1.0), "machine_share": (0, 100)}

@@ -210,11 +210,8 @@ class TrainingApp(tk.Tk):
         box = ttk.LabelFrame(frame, text="Plastic look (learned from your photos)")
         box.pack(fill="x")
         self.sv["real_gloss"] = tk.BooleanVar(value=s["real_gloss"])
-        self.sv["real_texture"] = tk.BooleanVar(value=s["real_texture"])
         ttk.Checkbutton(box, text="Shine like my photos", variable=self.sv["real_gloss"],
                         command=self._update_look).pack(anchor="w", padx=8, pady=(4, 0))
-        ttk.Checkbutton(box, text="Surface detail from my photos", variable=self.sv["real_texture"],
-                        command=self._update_look).pack(anchor="w", padx=8)
         self.look_text = ttk.Label(box, text="", foreground=MUTED, wraplength=290, justify="left")
         self.look_text.pack(anchor="w", padx=8, pady=(2, 0))
         ttk.Button(box, text="Learn from my photos", command=self._learn_look).pack(anchor="w", padx=8, pady=6)
@@ -242,7 +239,7 @@ class TrainingApp(tk.Tk):
             return
         self.look_text.configure(text=f"Learned {got['learned']} from {got['photos']} photos: highlights cover "
                                       f"{got['photo_highlights']:.1%} of a piece (renders: "
-                                      f"{got['render_highlights']:.1%}); {got['patches']} surface patches.")
+                                      f"{got['render_highlights']:.1%} with the learned shine).")
 
     def _learn_look(self):
         if getattr(self, "_learning", False):
@@ -254,7 +251,6 @@ class TrainingApp(tk.Tk):
             from . import plastic_look
             try:
                 plastic_look.learn(600, log=lambda t: self.queue.put(("line", t)))
-                plastic_look._patches = None   # use the new patches from now on
             except Exception as e:
                 self.queue.put(("line", f"Learning failed: {e.__class__.__name__}: {e}"))
             self.queue.put(("learned", None))

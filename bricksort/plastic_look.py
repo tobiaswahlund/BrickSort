@@ -1,17 +1,13 @@
-"""Learn how real LEGO plastic looks from your real photos, so the training pictures match it.
+"""Learn how shiny real LEGO plastic looks from your real photos, so the training pictures match it.
 
-Two things are measured on your photos of single pieces on a plain background (my_photos/<part>/<colour>/,
-not the dataset renders):
-  - gloss: how much of a piece is highlight, and how bright its highlights are compared with its
-    plain colour. Renders are then made with different shine settings, and the setting whose
-    renders look most like your photos is kept (fit_gloss).
-  - surface texture: the fine pattern on flat faces of real pieces (tiny bumps, scratches, the
-    camera's own grain). Small patches of it are kept and later laid over the 3D piece's wear
-    texture, so renders get real-looking surface detail instead of perfectly smooth plastic.
+Measured on your photos of single pieces on a plain background (my_photos/<part>/<colour>/, not the
+dataset renders): how much of a piece is highlight, and how bright its highlights are compared with
+its plain colour. Renders are then made with different shine settings, and the setting whose renders
+look most like your photos is kept (fit_gloss).
+(Surface detail cut from the photos was tried too, on 2026-10-14, and dropped: it didn't look right.)
 
 Run:  python -m bricksort.plastic_look      (or "Learn from my photos" in the Model training window)
-Results: <data folder>/plastic_look.json and plastic_patches.npy. Machine setup decides whether
-the training pictures use them.
+Result: <data folder>/plastic_look.json. Machine setup decides whether the training pictures use it.
 """
 import json
 import random
@@ -19,13 +15,11 @@ import sys
 import time
 
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image
 
 from . import config
 
 RESULT = config.BIG_DIR / "plastic_look.json"
-PATCHES = config.BIG_DIR / "plastic_patches.npy"
-PATCH = 32
 DATASET_FILES = ("d02_", "b200_")   # renders and scene cut-outs: not real single-piece photos
 
 
@@ -72,30 +66,8 @@ def gloss_stats(img, mask):
     return float(hl.mean()), float((np.percentile(lum, 98) - m) / (255 - m))
 
 
-def _flat_patches(img, mask, k=4):
-    """Up to k PATCHxPATCH patches of the surface pattern on flat, evenly lit parts of the piece:
-    the photo divided by a blurred copy of itself, so only the fine detail is left (1 = no change)."""
-    grey = Image.fromarray(img.astype(np.uint8)).convert("L")
-    g = np.asarray(grey, np.float32) + 1
-    smooth = np.asarray(grey.filter(ImageFilter.GaussianBlur(4)), np.float32) + 1
-    detail = g / smooth
-    edges = np.asarray(grey.filter(ImageFilter.FIND_EDGES), np.float32)
-    out = []
-    h, w = g.shape
-    for y in range(0, h - PATCH, PATCH // 2):
-        for x in range(0, w - PATCH, PATCH // 2):
-            if not mask[y:y + PATCH, x:x + PATCH].all():
-                continue
-            if edges[y:y + PATCH, x:x + PATCH].mean() > 6 or smooth[y:y + PATCH, x:x + PATCH].mean() > 235:
-                continue   # an edge, a stud outline or a burnt-out highlight: not plain surface
-            out.append(detail[y:y + PATCH, x:x + PATCH])
-            if len(out) >= k:
-                return out
-    return out
-
-
 def measure_real(n=600, log=print):
-    stats, patches = [], []
+    stats = []
     for k, f in enumerate(_real_photos(n), 1):
         try:
             img = np.asarray(Image.open(f).convert("RGB").resize((224, 224)), np.float32)
@@ -105,10 +77,9 @@ def measure_real(n=600, log=print):
         s = gloss_stats(img, mask)
         if s:
             stats.append(s)
-        patches += _flat_patches(img, mask)
         if k % 100 == 0:
-            log(f"  looked at {k} photos ({len(stats)} usable for gloss, {len(patches)} surface patches)")
-    return np.array(stats), np.array(patches, np.float32)
+            log(f"  looked at {k} photos ({len(stats)} usable)")
+    return np.array(stats)
 
 
 LAMP_SPECULAR = 0.3   # the lamps' own shine in the training scenes (scene.py); the fit keeps it fixed
@@ -188,24 +159,20 @@ def fit_gloss(real, log=print):
 def learn(n=600, log=print):
     t0 = time.time()
     log(f"Measuring your photos ({n} at most) …")
-    real, patches = measure_real(n, log)
+    real = measure_real(n, log)
     if len(real) < 30:
         log("Not enough usable photos of single pieces on a plain background (need 30).")
         return None
     log(f"Your photos: highlights cover {real[:, 0].mean():.1%} of a piece, strength {real[:, 1].mean():.2f}.")
     log("Trying shine settings on renders …")
     err, spec, shin, got = fit_gloss(real, log)
-    detail = float(np.std(patches)) if len(patches) else 0.0
     result = {"specular": spec, "shininess": shin, "photo_highlights": float(real[:, 0].mean()),
               "photo_strength": float(real[:, 1].mean()), "render_highlights": float(got[0]),
-              "render_strength": float(got[1]), "surface_detail": detail, "photos": int(len(real)),
-              "patches": int(len(patches)), "learned": time.strftime("%Y-%m-%d %H:%M")}
+              "render_strength": float(got[1]), "photos": int(len(real)),
+              "learned": time.strftime("%Y-%m-%d %H:%M")}
     config.BIG_DIR.mkdir(parents=True, exist_ok=True)
     RESULT.write_text(json.dumps(result, indent=2), encoding="utf-8")
-    if len(patches):
-        np.save(PATCHES, patches)
-    log(f"Best shine: specular {spec}, shininess {shin}. {len(patches)} surface patches kept "
-        f"(fine detail ±{detail:.1%}). Took {time.time() - t0:.0f} s.")
+    log(f"Best shine: specular {spec}, shininess {shin}. Took {time.time() - t0:.0f} s.")
     return result
 
 
@@ -217,9 +184,6 @@ def learned():
         return None
 
 
-TEXTURE_STRENGTH = 0.45  # the photos' detail also holds some camera grain; renders add their own later
-
-
 def gloss(rng, dull):
     """(specular, shininess) for the plastic in a training picture: learned from your photos if
     'Shine from my photos' is on in the machine setup, else None (scene.py keeps its own values)."""
@@ -229,35 +193,6 @@ def gloss(rng, dull):
     if not got:
         return None
     return float(np.clip(got["specular"] * a * (1 - dull), 0, 1)), float(np.clip(got["shininess"] + b, 0, 1))
-
-
-def use_texture():
-    from . import machine_setup
-    return bool(machine_setup.load().get("real_texture")) and PATCHES.exists()
-
-
-_patches = None
-
-
-def surface_texture(rng, size):
-    """A size x size multiplicative pattern (around 1) tiled from real surface patches."""
-    global _patches
-    if _patches is None:
-        _patches = np.load(PATCHES) if PATCHES.exists() else np.zeros((0, PATCH, PATCH), np.float32)
-    if not len(_patches):
-        return np.ones((size, size), np.float32)
-    scale = 2   # real photos show a piece at about half the texture's pixels per mm
-    step = PATCH * scale
-    out = np.ones((size, size), np.float32)
-    for y in range(0, size, step):
-        for x in range(0, size, step):
-            p = _patches[rng.integers(len(_patches))]
-            p = np.rot90(p, rng.integers(4))
-            if rng.random() < 0.5:
-                p = p[:, ::-1]
-            p = np.kron(p, np.ones((scale, scale), np.float32))
-            out[y:y + step, x:x + step] = p[:size - y, :size - x]
-    return out
 
 
 if __name__ == "__main__":
