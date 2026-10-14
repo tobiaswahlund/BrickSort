@@ -18,7 +18,7 @@ from PIL import Image, ImageTk
 
 from . import catalog, config, custom, junk
 from .ldraw import Library
-from .ui import Label, make_copyable
+from .ui import MUTED, ImageBox, Label, make_copyable
 from .render import real_colors
 from .cut import autocomplete, wide_dropdown
 from .model import Prediction
@@ -78,52 +78,82 @@ class Demo(tk.Tk):
 
     # ---------- layout ----------
     def _build(self):
-        left = ttk.Frame(self)
-        left.grid(row=0, column=0, sticky="ns", padx=(0, 10))
-        Label(left, text="1. Choose a piece", font=("Segoe UI", 11, "bold")).pack(anchor="w")
+        pad = {"padx": 8, "pady": 6}
+        # ---- toolbar: the other tasks, so the left side is only about dropping a piece
+        bar = ttk.Frame(self)
+        bar.grid(row=0, column=0, columnspan=3, sticky="we", pady=(0, 8))
+        ttk.Button(bar, text="Open photo…", command=self.open_photo).pack(side="left")
+        ttk.Button(bar, text="Sort unknown photos…", command=self.review_unknown).pack(side="left", padx=6)
+        ttk.Button(bar, text="Review rest bin…", command=self.review_rest).pack(side="left")
+        ttk.Button(bar, text="Spot check…", command=self.spot_check).pack(side="left", padx=6)
+        self.retrain_btn = ttk.Button(bar, text="Retrain model", command=self.retrain)
+        self.retrain_btn.pack(side="right")
+        ttk.Button(bar, text="New custom piece…", command=self.new_custom_piece).pack(side="right", padx=6)
+
+        # ---- left: choose a piece and drop it
+        left = ttk.LabelFrame(self, text="Piece")
+        left.grid(row=1, column=0, sticky="nsew", padx=(0, 8))
+        left.rowconfigure(2, weight=1)
+        left.columnconfigure(0, weight=1)
+        ttk.Label(left, text="Search by number or name").grid(row=0, column=0, sticky="w", padx=8, pady=(6, 0))
         self.search = tk.StringVar()
         self.search.trace_add("write", lambda *_: self._fill_list())
-        ttk.Entry(left, textvariable=self.search).pack(fill="x", pady=(4, 2))
-        self.listbox = tk.Listbox(left, width=42, height=18, exportselection=False)
-        self.listbox.pack(fill="y", expand=True)
+        ttk.Entry(left, textvariable=self.search).grid(row=1, column=0, sticky="we", padx=8, pady=(2, 4))
+        lst = ttk.Frame(left)
+        lst.grid(row=2, column=0, sticky="nsew", padx=8)
+        # fixed-width font, so the part numbers and names line up in columns
+        self.listbox = tk.Listbox(lst, width=44, height=14, exportselection=False, activestyle="none",
+                                  font=("Consolas", 9))
+        sb = ttk.Scrollbar(lst, orient="vertical", command=self.listbox.yview)
+        self.listbox.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.listbox.pack(side="left", fill="both", expand=True)
         self.listbox.bind("<<ListboxSelect>>", lambda e: self._show_preview())
+        self.listbox.bind("<Double-Button-1>", lambda e: self.drop())
         self.preview = Label(left)
-        self.preview.pack(pady=4)
-
-        Label(left, text="2. Colour").pack(anchor="w")
+        self.preview.grid(row=3, column=0, pady=6)
+        ttk.Label(left, text="Colour").grid(row=4, column=0, sticky="w", padx=8)
         self.color_choice = ttk.Combobox(left, state="readonly", width=38)
         wide_dropdown(self.color_choice)
-        self.color_choice.pack(fill="x")
+        self.color_choice.grid(row=5, column=0, sticky="we", padx=8)
         self.color_choice.set("Random")
-
         btns = ttk.Frame(left)
-        btns.pack(fill="x", pady=8)
-        ttk.Button(btns, text="Drop it!", command=self.drop).pack(side="left", expand=True, fill="x")
-        ttk.Button(btns, text="Random piece + drop", command=self.random_drop).pack(side="left", expand=True, fill="x")
-        ttk.Button(left, text="Open a real photo…", command=self.open_photo).pack(fill="x")
-        ttk.Button(left, text="Go through my_photos/unknown", command=self.review_unknown).pack(fill="x", pady=(4, 0))
-        ttk.Button(left, text="Review the sorter's rest bin", command=self.review_rest).pack(fill="x", pady=(4, 0))
-        ttk.Button(left, text="Spot check sorted pieces", command=self.spot_check).pack(fill="x", pady=(4, 0))
-        ttk.Button(left, text="New custom piece…", command=self.new_custom_piece).pack(fill="x", pady=(4, 0))
-        ttk.Button(left, text="Retrain with my corrections", command=self.retrain).pack(fill="x", pady=(8, 0))
+        btns.grid(row=6, column=0, sticky="we", padx=8, pady=8)
+        ttk.Button(btns, text="▼ Drop", command=self.drop).pack(side="left", expand=True, fill="x")
+        ttk.Button(btns, text="Random piece", command=self.random_drop).pack(side="left", expand=True, fill="x",
+                                                                          padx=(6, 0))
 
-        right = ttk.Frame(self)
-        right.grid(row=0, column=1, sticky="n")
-        Label(right, text="Virtual world", font=("Segoe UI", 11, "bold")).grid(row=0, column=0, sticky="w")
-        Label(right, text="Camera picture", font=("Segoe UI", 11, "bold")).grid(row=0, column=1, sticky="w", padx=10)
-        self.view = Label(right)
-        self.view.grid(row=1, column=0)
-        self.camera = Label(right)
-        self.camera.grid(row=1, column=1, padx=10, sticky="n")
-        self.status = Label(right, text="", wraplength=VIEW + 240, justify="left")
-        self.status.grid(row=2, column=0, columnspan=2, sticky="w", pady=6)
-        self.log = tk.Text(right, height=7, width=90, state="disabled", font=("Consolas", 9))
+        # ---- right: the drop and what the camera saw (both grow with the window)
+        world = ttk.LabelFrame(self, text="Simulation")
+        world.grid(row=1, column=1, sticky="nsew")
+        self.view = ImageBox(world, VIEW, VIEW)
+        self.view.pack(fill="both", expand=True, **pad)
+        cam = ttk.LabelFrame(self, text="Camera picture")
+        cam.grid(row=1, column=2, sticky="nsew", padx=(8, 0))
+        self.camera = ImageBox(cam, 224, 224)
+        self.camera.pack(fill="both", expand=True, **pad)
+
+        # ---- bottom: what happened
+        bottom = ttk.LabelFrame(self, text="Log")
+        bottom.grid(row=3, column=0, columnspan=3, sticky="nsew", pady=(8, 0))
+        self.log = tk.Text(bottom, height=6, width=60, state="disabled", font=("Consolas", 9), wrap="word",
+                           relief="flat")
         make_copyable(self.log)  # select + Ctrl+C, or right-click > Copy
-        self.log.grid(row=3, column=0, columnspan=2, sticky="we")
+        log_sb = ttk.Scrollbar(bottom, orient="vertical", command=self.log.yview)
+        self.log.configure(yscrollcommand=log_sb.set)
+        log_sb.pack(side="right", fill="y", pady=6)
+        self.log.pack(side="left", fill="both", expand=True, padx=(8, 0), pady=6)
+        self.status = Label(self, text="Choose a piece and press Drop (or double-click it).", foreground=MUTED,
+                            wraplength=900, justify="left")
+        self.status.grid(row=4, column=0, columnspan=3, sticky="we", pady=(6, 0))
 
+        self.columnconfigure(1, weight=3)
+        self.columnconfigure(2, weight=1)
+        self.rowconfigure(1, weight=3)
+        self.rowconfigure(3, weight=1)
         blank = Image.new("RGB", (VIEW, VIEW), (235, 235, 235))
-        self._set(self.view, photo(blank, VIEW))
-        self._set(self.camera, photo(blank, 224))
+        self.view.set(blank)
+        self.camera.set(blank)
         self._fill_list()
 
     def _set(self, label, img):
@@ -226,7 +256,7 @@ class Demo(tk.Tk):
         except StopIteration:
             self._photograph(truth)
             return
-        self._set(self.view, photo(frame, VIEW))
+        self.view.set(frame)
         self.after(15, self._animate, frames, truth)
 
     def _photograph(self, truth):
@@ -234,7 +264,7 @@ class Demo(tk.Tk):
         if crop is None:
             self.status.configure(text="The piece ended up out of the camera's view. Drop it again!")
             return
-        self._set(self.camera, photo(crop, 224))
+        self.camera.set(crop)
         self.status.configure(text="Camera took a picture. Asking the model …")
         self.update()
         self.review(crop, truth=truth)
@@ -244,7 +274,7 @@ class Demo(tk.Tk):
         if not path:
             return
         img = load_square(path)
-        self._set(self.camera, photo(img, 224))
+        self.camera.set(img)
         self.review(img, truth=None)
 
     def review_unknown(self, _skip=()):
@@ -255,7 +285,7 @@ class Demo(tk.Tk):
             return
         path = todo[0]
         img = load_square(path)
-        self._set(self.camera, photo(img, 224))
+        self.camera.set(img)
         self.status.configure(text=f"{len(todo)} unknown photos left. Showing {path.name}.")
         win = self.review(img, truth=None, source=path)
         win.bind("<Destroy>", lambda e: e.widget is win and self.after(
@@ -282,7 +312,7 @@ class Demo(tk.Tk):
         meta_file = png.with_suffix(".json")
         crop = Image.open(png).convert("RGB")
         crop.load()
-        self._set(self.camera, photo(crop, 224))
+        self.camera.set(crop)
         if spot_check:
             self.status.configure(text=f"Spot check: {len(todo)} sorted pieces to check. The machine put this "
                                        f"one in '{meta.get('bin', '?')}'. If the first guess is right, click it.")
@@ -308,7 +338,7 @@ class Demo(tk.Tk):
             win.destroy()
 
         win = self.review(crop, truth=None, pred=pred, on_saved=done,
-                          extra=[("Not a Lego piece", not_lego), ("Several pieces", several)])
+                          extra=[("Not LEGO", not_lego), ("Several pieces", several)])
         # answered -> show the next one; "Skip" keeps it for later and stops
         win.bind("<Destroy>", lambda e: e.widget is win and not png.exists()
                  and self.after(100, self.review_log, folder, spot_check))
@@ -467,14 +497,18 @@ class ReviewWindow(tk.Toplevel):
 
         top = ttk.Frame(self)
         top.pack(fill="x")
+        seen = ttk.LabelFrame(top, text="Photo")
+        seen.pack(side="left", anchor="n")
         imgs.append(photo(crop, 200))
-        Label(top, image=imgs[-1]).pack(side="left")
-        info = ttk.Frame(top)
-        info.pack(side="left", padx=12, anchor="n")
-        Label(info, text="What the camera saw", font=("Segoe UI", 12, "bold")).pack(anchor="w")
+        Label(seen, image=imgs[-1]).pack(padx=8, pady=6)
+        info = ttk.LabelFrame(top, text="Colour")
+        info.pack(side="left", padx=(8, 0), anchor="n", fill="y")
+        info = ttk.Frame(info, padding=(8, 4))
+        info.pack(fill="both")
 
         # Colour: the model's top guesses as swatches, plus a dropdown to correct it
-        Label(info, text="Colour" + (" – the model thinks:" if color_guesses else ":")).pack(anchor="w", pady=(8, 2))
+        ttk.Label(info, text="The model's guesses (click to use):" if color_guesses else "Choose the colour:"
+                  ).pack(anchor="w", pady=(0, 2))
         self.color = ttk.Combobox(info, width=28, values=app.color_list)
         wide_dropdown(self.color)
         autocomplete(self.color, app.color_list)
@@ -496,11 +530,10 @@ class ReviewWindow(tk.Toplevel):
                      f"{app.color_name(cid)}")).pack(anchor="w", pady=(10, 2))
             self.reveal.pack(anchor="w")
 
-        Label(self, text="The model's part guesses – set the colour above, then click the right part"
-                             "  (drag a 3D piece to turn it, scroll to zoom)" if guesses else
-                  "No model yet, so no guesses. Type the right ID below.",
-                  font=("Segoe UI", 11, "bold")).pack(anchor="w", pady=(10, 4))
-        row = ttk.Frame(self)
+        parts_box = ttk.LabelFrame(self, text="Part: select the right one (drag a piece to turn it, scroll to zoom)"
+                                   if guesses else "Part: no trained model yet, so type the number below")
+        parts_box.pack(fill="x", pady=(8, 0))
+        row = ttk.Frame(parts_box, padding=6)
         row.pack()
         guess_rgb = app.colors.get(color_guesses[0][0], (None, (160, 165, 169)))[1] if color_guesses else (160, 165, 169)
         for part_id, p in guesses:
@@ -516,11 +549,11 @@ class ReviewWindow(tk.Toplevel):
                 Label(card, text=f"Look-alike: {other} ({kind})", foreground="#a05a00").pack()
             if part_id in app.bins and app.bins[part_id] != part_id:
                 Label(card, text=f"Sorts into bin {app.bins[part_id]}", foreground="#666").pack()
-            ttk.Button(card, text="This one ✓", command=lambda i=part_id: self.choose(i)).pack(pady=(4, 0))
+            ttk.Button(card, text="Select", command=lambda i=part_id: self.choose(i)).pack(pady=(4, 0))
 
         bottom = ttk.Frame(self)
         bottom.pack(fill="x", pady=(12, 0))
-        Label(bottom, text="None of these? Correct part ID:").pack(side="left")
+        ttk.Label(bottom, text="None of these? Part number:").pack(side="left")
         self.entry = ttk.Combobox(bottom, width=14, values=[p["id"] for p in app.parts])
         self.entry.pack(side="left", padx=6)
         self.entry.bind("<Return>", lambda e: self.choose(self.entry.get()))
