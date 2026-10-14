@@ -13,14 +13,14 @@ import numpy as np
 import mujoco
 from PIL import Image
 
-from . import messy, surfaces
+from . import machine_setup, messy, surfaces
 from . import wear as wear_mod
 
 CAM_RES = 480
 N_LIGHTS = 5
 # The sorting machine's camera: 720 px across 2*2.1*tan(22.5 deg) units. Our camera is CAM_RES px with
 # the same 45 deg view, so this distance gives the same pixels per mm (pieces look just as small).
-SORTER_CAM_DIST = 2.1 * 480 / 720
+SORTER_CAM_DIST = machine_setup.camera_height() * 480 / 720   # your machine's camera height (2.1 = 210 mm)
 
 
 def close_renderer(r):
@@ -188,24 +188,27 @@ class DropScene:
         m.mat_shininess[self.plastic] = rng.uniform(0.7, 0.9)
 
     def sorter_look(self, rng):
-        """Like the virtual sorting machine: one of its belts (green or black, matte or glossy) underneath,
-        three fixed lamps above and a little to the side (with a little variety), no light from the camera."""
+        """Like your sorting machine (machine setup): its belt underneath, its lamps above and a little
+        to the side (with a little variety), no light from the camera."""
         m, h = self.model, self.cam_h
         self.rng = rng
+        setup = machine_setup.load()
         belts = [self.surface_mats[i] for i, n in enumerate(surfaces.SURFACES) if n in surfaces.SORTER_BELTS]
+        if not setup["all_belts_in_training"]:   # only your own belt
+            belts = [self.surface_mats[i] for i, n in enumerate(surfaces.SURFACES)
+                     if surfaces.SORTER_BELTS.get(n) == setup["belt"]] or belts
         m.geom_matid[self.floor] = belts[rng.integers(len(belts))]
-        # the sorting machine's lamps (units: the belt camera is 2.1 up; lamps 3 up, 1.2-1.4 to the side)
-        lamps = [((-1.2, -1.2, 3.0), 0.33), ((0.0, -1.4, 3.2), 0.45), ((1.2, -1.2, 3.0), 0.33)]
+        lamps = machine_setup.lamps(spread=1.2, rng=rng)   # simulation units: 1 = 100 mm
         shift = rng.uniform(-2.0, 2.0)   # where along the belt the piece is, relative to the lamps
         for i in range(N_LIGHTS):
             if i >= len(lamps):
                 m.light_diffuse[i] = m.light_specular[i] = 0
                 continue
-            (x, y, z), power = lamps[i]
-            pos = np.array([x + shift, y, z]) + rng.normal(0, 0.1, 3)
+            pos, power, colour = lamps[i]
+            pos = pos + np.array([shift, 0, 0])
             m.light_pos[i] = pos
             m.light_dir[i] = -pos / np.linalg.norm(pos)
-            m.light_diffuse[i] = power * rng.uniform(0.9, 1.1)
+            m.light_diffuse[i] = np.clip(colour * power, 0, 1)
             m.light_specular[i] = 0.3
         m.vis.headlight.ambient[:] = rng.uniform(0.27, 0.33)
         m.vis.headlight.diffuse[:] = 0
@@ -261,7 +264,7 @@ class DropScene:
         target = np.mean([self.data.xpos[b] for b in [self.part_body] + self.loose_bodies], axis=0)
         target[2] = 0
         if sorter:
-            elev, azim, dist = np.pi / 2, 0.0, SORTER_CAM_DIST
+            elev, azim, dist = np.pi / 2, 0.0, machine_setup.camera_height() * 480 / 720   # see SORTER_CAM_DIST
             rng = None
         elif rng is None:
             elev, azim, dist = np.pi / 2, 0.0, self.cam_h

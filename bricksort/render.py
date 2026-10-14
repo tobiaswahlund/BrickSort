@@ -12,7 +12,7 @@ import numpy as np
 import mujoco
 from PIL import Image
 
-from . import catalog, config, junk, wear
+from . import catalog, config, junk, machine_setup, wear
 from .ldraw import Library
 from .scene import DropScene
 
@@ -24,7 +24,7 @@ EXTRA_COLORS = [0, 1, 2, 4, 14, 15, 19, 25, 27, 5, 70, 71, 72, 320, 28, 322, 272
 # neon green, green
 TRANS_COLORS = [47, 41, 36, 182, 46, 33, 40, 42, 34]
 TRANS_SHARE = 0.12   # share of training pictures in a see-through colour
-SORTER_SHARE = 0.5   # share of pictures taken like the sorting machine (its belts, lamps and camera)
+SORTER_SHARE = machine_setup.load()["machine_share"] / 100   # share of pictures taken like your machine
 
 
 def _quat(axis, deg):
@@ -189,6 +189,30 @@ def render_part(lib, part, color_table, n, rng, root=None, reference=True):
     finally:
         if scene:
             scene.close()
+
+
+def preview(lib, part, color_table, n, rng):
+    """n pictures of a part taken like your machine (machine setup), without saving them."""
+    from . import surfaces
+    surfaces.refresh()   # pick up a belt photo added since the program started
+    verts, faces = lib.part_mesh(part["id"])
+    ids, weights = real_colors(part, color_table)
+    tex_path = config.BIG_DIR / "wear_textures" / "_preview.png"
+    tex_path.parent.mkdir(parents=True, exist_ok=True)
+    scene, out = worn_scene(verts, faces, rng, tex_path), []
+    try:
+        for _ in range(n):
+            cid = ids[rng.choice(len(ids), p=weights)]
+            scene.set_color(wear.aged_colour(color_table[cid][1], rng),
+                            transparent=color_table[cid][0].startswith("Trans"))
+            scene.sorter_look(rng)
+            scene.settle(rng)
+            _, crop = scene.snapshot(config.IMAGE_SIZE, rng=rng, sorter=True)
+            if crop is not None:
+                out.append(crop)
+    finally:
+        scene.close()
+    return out
 
 
 def render_multiple(lib, parts, color_table, n, rng):

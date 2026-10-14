@@ -12,14 +12,17 @@ training continues from the last finished round. The right side shows the traini
 import os
 import queue
 import re
+import shutil
 import subprocess
 import sys
 import threading
 import time
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import filedialog, messagebox, ttk
 
-from . import config
+from PIL import ImageTk
+
+from . import belts, config, machine_setup
 from .ui import MUTED, make_copyable
 from .watch import TrainingPictures
 
@@ -66,7 +69,13 @@ class TrainingApp(tk.Tk):
 
         left = ttk.Frame(self)
         left.grid(row=1, column=0, sticky="nsew")
-        settings = ttk.LabelFrame(left, text="Settings")
+        tabs = ttk.Notebook(left)
+        tabs.pack(fill="x")
+        train_tab, setup_tab = ttk.Frame(tabs, padding=6), ttk.Frame(tabs, padding=6)
+        tabs.add(train_tab, text="Training")
+        tabs.add(setup_tab, text="Machine setup")
+        self._build_setup(setup_tab)
+        settings = ttk.LabelFrame(train_tab, text="Settings")
         settings.pack(fill="x")
         self.per_part = tk.IntVar(value=100)
         self.rounds = tk.IntVar(value=10)
@@ -84,12 +93,12 @@ class TrainingApp(tk.Tk):
         self.resume_note = ttk.Label(settings, text="", foreground="#a05a00", wraplength=420)
         self.resume_note.grid(row=3, column=0, columnspan=2, sticky="w", padx=8, pady=(0, 6))
 
-        model = ttk.LabelFrame(left, text="Current model")
+        model = ttk.LabelFrame(train_tab, text="Current model")
         model.pack(fill="x", pady=(8, 0))
         self.model_text = ttk.Label(model, text="Reading the model …", wraplength=440, justify="left")
         self.model_text.pack(anchor="w", padx=8, pady=6)
 
-        prog = ttk.LabelFrame(left, text="Progress")
+        prog = ttk.LabelFrame(train_tab, text="Progress")
         prog.pack(fill="x", pady=(8, 0))
         self.step_text = ttk.Label(prog, text="Not running.")
         self.step_text.pack(anchor="w", padx=8, pady=(6, 2))
@@ -98,7 +107,7 @@ class TrainingApp(tk.Tk):
         self.eta_text = ttk.Label(prog, text="", foreground=MUTED)
         self.eta_text.pack(anchor="w", padx=8, pady=(2, 6))
 
-        rounds = ttk.LabelFrame(left, text="Rounds (tested on simulated pictures it didn't train on)")
+        rounds = ttk.LabelFrame(train_tab, text="Rounds (tested on simulated pictures it didn't train on)")
         rounds.pack(fill="x", pady=(8, 0))
         cols = ("loss", "part", "top5", "colour", "category", "time")
         self.table = ttk.Treeview(rounds, columns=cols, height=5, selectmode="none")
@@ -127,6 +136,175 @@ class TrainingApp(tk.Tk):
         self.viewer.pack(fill="both", expand=True, padx=8, pady=6)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(1, weight=1)
+
+    # ------------------------------------------------------------------ machine setup
+    def _build_setup(self, tab):
+        s = machine_setup.load()
+        ttk.Label(tab, text="Make the training pictures look like your own machine. Save, then make the "
+                            "training pictures again and train.", wraplength=440, foreground=MUTED
+                  ).pack(anchor="w", pady=(0, 6))
+        self.sv = {}   # setting name -> tk variable
+
+        belt = ttk.LabelFrame(tab, text="Belt")
+        belt.pack(fill="x")
+        self.sv["belt"] = tk.StringVar(value=s["belt"])
+        self.belt_box = ttk.Combobox(belt, textvariable=self.sv["belt"], values=belts.available(), state="readonly",
+                                     width=28)
+        self.belt_box.grid(row=0, column=0, sticky="w", padx=8, pady=4)
+        ttk.Button(belt, text="Use a photo of my belt…", command=self._own_belt_photo
+                   ).grid(row=0, column=1, sticky="w", pady=4)
+        self.sv["own_belt_mm"] = tk.IntVar(value=s["own_belt_mm"])
+        ttk.Label(belt, text="Width of belt the photo shows (mm)").grid(row=1, column=0, sticky="w", padx=8)
+        ttk.Spinbox(belt, textvariable=self.sv["own_belt_mm"], from_=10, to=500, increment=5, width=6
+                    ).grid(row=1, column=1, sticky="w")
+        self.sv["all_belts_in_training"] = tk.BooleanVar(value=s["all_belts_in_training"])
+        ttk.Checkbutton(belt, text="Train on all belts, not only mine (copes better with changes)",
+                        variable=self.sv["all_belts_in_training"]).grid(row=2, column=0, columnspan=2, sticky="w",
+                                                                       padx=8, pady=(2, 6))
+
+        cam = ttk.LabelFrame(tab, text="Camera and lamps (mm, measured from the belt)")
+        cam.pack(fill="x", pady=(8, 0))
+        rows = (("camera_height_mm", "Camera height", 100, 600, 10),
+                ("lamps", "Number of lamps", 1, 5, 1),
+                ("lamp_height_mm", "Lamp height", 100, 1000, 10),
+                ("lamp_side_mm", "Lamps to the side of the camera", 0, 500, 10))
+        for r, (key, label, lo, hi, step) in enumerate(rows):
+            self.sv[key] = tk.IntVar(value=int(s[key]))
+            ttk.Label(cam, text=label).grid(row=r, column=0, sticky="w", padx=8, pady=2)
+            ttk.Spinbox(cam, textvariable=self.sv[key], from_=lo, to=hi, increment=step, width=6
+                        ).grid(row=r, column=1, sticky="w", pady=2)
+        ttk.Label(cam, text="210 mm sees the whole 150 mm wide belt; lower sees less of it.", foreground=MUTED
+                  ).grid(row=len(rows), column=0, columnspan=3, sticky="w", padx=8)
+        for r, (key, label, lo, hi, show) in enumerate((
+                ("brightness", "Brightness", 0.3, 2.0, lambda v: f"{v:.0%}"),
+                ("warmth", "Light colour (white to warm)", 0.0, 1.0, lambda v: f"{v:.0%} warm"),
+                ("machine_share", "Pictures like my machine", 0, 100, lambda v: f"{v:.0f}%")), start=len(rows) + 1):
+            self.sv[key] = tk.DoubleVar(value=float(s[key]))
+            text = tk.StringVar(value=show(float(s[key])))
+            ttk.Label(cam, text=label).grid(row=r, column=0, sticky="w", padx=8, pady=2)
+            ttk.Scale(cam, from_=lo, to=hi, variable=self.sv[key], length=150,
+                      command=lambda v, t=text, f=show: t.set(f(float(v)))).grid(row=r, column=1, sticky="w")
+            ttk.Label(cam, textvariable=text, width=10).grid(row=r, column=2, sticky="w", padx=4)
+
+        buttons = ttk.Frame(tab)
+        buttons.pack(fill="x", pady=(8, 0))
+        ttk.Button(buttons, text="Preview pictures", command=self._preview).pack(side="left")
+        ttk.Button(buttons, text="Built-in values", command=self._setup_defaults).pack(side="left", padx=6)
+        ttk.Button(buttons, text="Save", command=self._save_setup).pack(side="right")
+        self.setup_note = ttk.Label(tab, text="", foreground=MUTED, wraplength=440)
+        self.setup_note.pack(anchor="w", pady=(4, 0))
+        again = ttk.LabelFrame(tab, text="After changing the set-up")
+        again.pack(fill="x", pady=(8, 0))
+        ttk.Label(again, text="The training pictures made so far show the old set-up. Make them all again, then "
+                              "train (this takes some hours).", wraplength=420).pack(anchor="w", padx=8, pady=(4, 2))
+        self.remake_btn = ttk.Button(again, text="Make all training pictures again…", command=self._remake)
+        self.remake_btn.pack(anchor="w", padx=8, pady=(0, 6))
+
+    def _setup_values(self):
+        """The set-up as typed in the tab, checked and kept within sensible limits."""
+        out = {}
+        for key, var in self.sv.items():
+            try:
+                v = var.get()
+            except tk.TclError:          # not a number: keep the saved value
+                v = machine_setup.load()[key]
+            if key in machine_setup.LIMITS:
+                lo, hi = machine_setup.LIMITS[key]
+                v = min(max(v, lo), hi)
+                v = int(round(v)) if isinstance(machine_setup.DEFAULTS[key], int) else round(float(v), 2)
+            out[key] = v
+        return out
+
+    def _own_belt_photo(self):
+        path = filedialog.askopenfilename(parent=self, title="A photo of your belt, taken from straight above",
+                                          filetypes=[("Pictures", "*.png *.jpg *.jpeg *.bmp *.webp")])
+        if not path:
+            return
+        machine_setup.set_own_belt(path)
+        self.belt_box.configure(values=belts.available())
+        self.sv["belt"].set(machine_setup.OWN_BELT)
+        self.setup_note.configure(text="Belt photo added (a copy, without the photo's hidden camera and location "
+                                       "data). Set how wide a piece of belt it shows, then Preview.")
+
+    def _setup_defaults(self):
+        for key, var in self.sv.items():
+            var.set(machine_setup.DEFAULTS[key])
+        self.setup_note.configure(text="Built-in values filled in (not saved yet).")
+
+    def _save_setup(self):
+        machine_setup.save(self._setup_values())
+        self.setup_note.configure(text="Saved. New training pictures use it; the sorting machine uses it the next "
+                                       "time it starts.")
+
+    def _preview(self):
+        """Six pictures of a random known part with the set-up as it is in the tab (not saved)."""
+        if getattr(self, "_previewing", False):
+            return
+        self._previewing = True
+        machine_setup.use(self._setup_values())
+        self.setup_note.configure(text="Making preview pictures …")
+
+        def work():
+            try:
+                import numpy as np
+                from . import catalog, render
+                if getattr(self, "lib", None) is None:
+                    from .ldraw import Library
+                    self.lib = Library()
+                rng = np.random.default_rng()
+                parts = [p for p in catalog.load_parts() if not p.get("custom") and not p.get("photos_only")
+                         and p["id"] not in ("not_lego", "multiple")]
+                for _ in range(10):   # some parts have no 3D model: try another
+                    part = parts[rng.integers(len(parts))]
+                    try:
+                        pics = render.preview(self.lib, part, catalog.colors(include_trans=True), 6, rng)
+                        break
+                    except ValueError:
+                        continue
+                self.queue.put(("preview", (part, pics)))
+            except Exception as e:
+                self.queue.put(("preview", (None, f"{e.__class__.__name__}: {e}")))
+            finally:
+                machine_setup.use(machine_setup.load_saved())
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _show_preview(self, part, pics):
+        self._previewing = False
+        if part is None:
+            self.setup_note.configure(text=f"Couldn't make a preview ({pics}).")
+            return
+        self.setup_note.configure(text="")
+        win = tk.Toplevel(self)
+        win.title(f"Preview: {part['id']} {part['name']}")
+        win.configure(padx=8, pady=8)
+        win.images = []
+        for k, img in enumerate(pics):
+            photo = ImageTk.PhotoImage(img.resize((200, 200)))
+            win.images.append(photo)
+            ttk.Label(win, image=photo).grid(row=k // 3, column=k % 3, padx=3, pady=3)
+        ttk.Label(win, text="Taken like your machine's camera, with the set-up as it is in the tab.",
+                  foreground=MUTED).grid(row=2, column=0, columnspan=3, sticky="w", pady=(4, 0))
+
+    def _remake(self):
+        if self.running:
+            messagebox.showinfo("Training is running", "Pause the training first.", parent=self)
+            return
+        folders = [d for d in (config.RENDERS, config.CATEGORY_RENDERS) if d.exists()]
+        n = sum(1 for d in folders for _ in d.glob("*/*.png"))
+        if not messagebox.askyesno(
+                "Make all training pictures again",
+                f"Delete all {n:,} training pictures, so the next Start makes them again with the saved machine "
+                "set-up?\n\nThey can't be brought back, but they can always be made again (that takes some "
+                "hours). Your own photos and corrections are not touched.", parent=self):
+            return
+        self._save_setup()
+        for d in folders:
+            shutil.rmtree(d, ignore_errors=True)
+        self.make_pictures.set(True)
+        self.write(f"Deleted {n:,} training pictures. Press Start to make them again with the machine set-up, "
+                   "then train.")
+        self.viewer.all_files = None
 
     def write(self, text):
         self.log.configure(state="normal")
@@ -241,6 +419,8 @@ class TrainingApp(tk.Tk):
                     self.eta_text.configure(text="")
                 elif kind == "model":
                     self.model_text.configure(text=value)
+                elif kind == "preview":
+                    self._show_preview(*value)
                 elif kind == "done":
                     self._finished(value)
         except queue.Empty:

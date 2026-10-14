@@ -8,7 +8,7 @@ World units: 1 unit = 100 mm real size (the parts are modelled 10x, see ldraw.py
 import numpy as np
 import mujoco
 
-from .. import belts, config, junk
+from .. import belts, config, junk, machine_setup
 from ..belts import BELTS, DEFAULT_BELT
 from ..render import real_colors
 from ..scene import _fmt, close_renderer
@@ -16,7 +16,8 @@ from . import hardware
 
 MM_PER_UNIT = 100.0
 BELT_HALF_LEN, BELT_HALF_WIDTH = 2.0, 0.75   # wide enough for big plates (a 2x16 plate is 128 mm)
-CAM_RES, CAM_H, FOVY = 720, 2.1, 45.0        # camera high enough to see the whole belt width
+CAM_RES, FOVY = 720, 45.0
+CAM_H = machine_setup.camera_height()      # 2.1 (210 mm) sees the whole belt width; see machine_setup
 OVERVIEW = (960, 540)   # rendered this big so it still looks sharp in a maximised window
 POOL = 40                 # different pieces in the world at once (38 Lego + 2 non-Lego)...
 REFRESH_AFTER = 60        # ...swapped for a new random set after this many pieces, so it keeps changing
@@ -83,7 +84,7 @@ SPAWN_CHOSEN = "Choose pieces…"
 def _tile(name):
     """The belt picture, 2x2 copies in one tile (it wraps around without seams, see belts.py).
     The tile is 2 x span long, which is the pattern length the belt's jump-back relies on."""
-    from PIL import Image
+    from PIL import Image, ImageOps
     src = belts.path(name)
     out = config.BIG_DIR / "belt_tiles" / src.name
     if not out.exists() or out.stat().st_mtime < src.stat().st_mtime:
@@ -91,8 +92,12 @@ def _tile(name):
         img = Image.open(src).convert("RGB")
         w, h = img.size
         tile = Image.new("RGB", (2 * w, 2 * h))
-        for x, y in ((0, 0), (w, 0), (0, h), (w, h)):
-            tile.paste(img, (x, y))
+        # a photo doesn't wrap around by itself: mirrored copies meet without a visible seam
+        photo = belts.spec(name).get("photo")
+        copies = (img, ImageOps.mirror(img), ImageOps.flip(img), ImageOps.flip(ImageOps.mirror(img))) if photo \
+            else (img,) * 4
+        for (x, y), copy in zip(((0, 0), (w, 0), (0, h), (w, h)), copies):
+            tile.paste(copy, (x, y))
         tile.save(out)
     return out.as_posix()
 RIG = ("camera_pole", "camera_arm", "camera_box")  # the camera's stand: shown, but casts no shadow
@@ -100,14 +105,15 @@ RIG = ("camera_pole", "camera_arm", "camera_box")  # the camera's stand: shown, 
 
 class ConveyorWorld:
     def __init__(self, lib, parts, colors, bin_names, rng, speed=0.22, all_parts=(), spawn_mode=SPAWN_TRAINED,
-                 belt=DEFAULT_BELT, chosen=()):
+                 belt=None, chosen=()):
         self.lib, self.colors, self.rng, self.speed = lib, colors, rng, speed
-        self.belt_name = belt if belt in BELTS else DEFAULT_BELT
+        belt = belt or machine_setup.load()["belt"]   # your machine's belt (machine setup)
+        self.belt_name = belt if belt in belts.available() else DEFAULT_BELT
         # The belt surface moves, and every so often jumps back by exactly a whole number of
         # pattern lengths, so the jump can't be seen: it looks like one endless, smooth belt.
         # (with texuniform, MuJoCo repeats the picture every 2 x span; measured: a shift of 2 x span
         #  gives an identical camera picture, any other shift doesn't)
-        period = 2 * BELTS[self.belt_name]["span"]
+        period = 2 * belts.spec(self.belt_name)["span"]
         self.slide = period * np.ceil(2 * BELT_SLIDE / period) / 2
         self.bin_names = list(bin_names)
         self.candidates = [p for p in parts if p["id"] != junk.NOT_LEGO and not p.get("custom")]  # need a 3D model
@@ -186,7 +192,13 @@ class ConveyorWorld:
       <geom type="box" pos="0 {-hw} 0.12" size="{hw} {wall} 0.12" rgba="{c[0]} {c[1]} {c[2]} 1"/>
     </body>""")
         bl, bw = BELT_HALF_LEN, BELT_HALF_WIDTH
-        belt = BELTS[self.belt_name]
+        belt = belts.spec(self.belt_name)
+        # they point down and towards the belt's middle line; shadows from the three strongest at most
+        lamps = "\n".join(
+            f'<light name="lamp{i}" pos="{p[0]:.3f} {p[1]:.3f} {p[2]:.3f}" dir="0 {-p[1] / max(p[2], 0.1):.3f} -1" '
+            f'diffuse="{power * c[0]:.3f} {power * c[1]:.3f} {power * c[2]:.3f}" specular="0.3 0.3 0.3" '
+            f'cutoff="70" exponent="1" castshadow="{"true" if i < 3 else "false"}"/>'
+            for i, (p, power, c) in enumerate(machine_setup.lamps(spread=bl * 0.6)))
         xml = f"""
 <mujoco>
   <option timestep="0.002"/>
@@ -207,10 +219,8 @@ class ConveyorWorld:
     {"".join(assets)}
   </asset>
   <worldbody>
-    <!-- three lamps hanging above the belt, a little to one side so shadows show; they never move -->
-    <light name="lamp1" pos="{-bl * 0.6} -1.2 3" dir="0 0.35 -1" diffuse="0.33 0.33 0.31" specular="0.3 0.3 0.3" cutoff="70" exponent="1" castshadow="true"/>
-    <light name="lamp2" pos="0 -1.4 3.2" dir="0 0.4 -1" diffuse="0.45 0.45 0.43" specular="0.3 0.3 0.3" cutoff="70" exponent="1" castshadow="true"/>
-    <light name="lamp3" pos="{bl * 0.6} -1.2 3" dir="0 0.35 -1" diffuse="0.33 0.33 0.31" specular="0.3 0.3 0.3" cutoff="70" exponent="1" castshadow="true"/>
+    <!-- the lamps of your machine setup, above the belt and a little to one side so shadows show -->
+    {lamps}
     <geom name="floor" type="plane" pos="0 0 -0.6" size="60 60 0.1" material="floor"/>
     <body name="beltbody" pos="0 0 -0.02">
       <joint name="beltslide" type="slide" axis="1 0 0"/>

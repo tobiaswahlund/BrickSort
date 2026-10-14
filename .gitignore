@@ -19,6 +19,7 @@ model/
 # Rebuilt automatically when missing
 bins.json
 belt_pieces.json
+machine_setup.json
 
 # Working copies of the part lists (the originals are in defaults/, see config.py)
 /parts.json

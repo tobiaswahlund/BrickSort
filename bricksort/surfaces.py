@@ -65,20 +65,47 @@ SURFACES = {
     "stone_concrete": 5.0, "stone_tiles": 6.0, "stone_granite": 3.0,
     "table_white": 4.0, "table_grey": 4.0,
 }
-# the sorting machine's belts (belts.py), at the same scale as on the machine
-SORTER_BELTS = {f"sorter_belt_{b['file'][:-4]}": name for name, b in belts.BELTS.items()}
-SURFACES.update({n: belts.BELTS[name]["span"] for n, name in SORTER_BELTS.items()})
+SORTER_BELTS = {}
+
+
+def refresh():
+    """The sorting machine's belts (belts.py, and your own belt photo if you added one), at the same scale
+    as on the machine. A photo is used as a mirrored 2x2 tile (no seams), so one copy covers twice its span."""
+    for n in SORTER_BELTS:
+        SURFACES.pop(n, None)
+    SORTER_BELTS.clear()
+    SORTER_BELTS.update({f"sorter_belt_{belts.spec(name)['file'][:-4]}": name for name in belts.available()})
+    SURFACES.update({n: belts.spec(name)["span"] * (2 if belts.spec(name).get("photo") else 1)
+                     for n, name in SORTER_BELTS.items()})
+
+
+refresh()
 
 
 def material(name):
     """Shine of a surface: the sorter belts keep their own (matte or glossy), the rest are dull."""
     if name in SORTER_BELTS:
-        b = belts.BELTS[SORTER_BELTS[name]]
+        b = belts.spec(SORTER_BELTS[name])
         return f'specular="{b["specular"]}" shininess="{b["shininess"]}" reflectance="{b["reflectance"]}"'
     return 'reflectance="0" specular="0.1"'
 
 
+def _own_belt(name, menu_name):
+    """Your belt photo as a mirrored 2x2 tile (redone every time: you may have changed the photo)."""
+    from PIL import ImageOps
+    img = Image.open(belts.path(menu_name)).convert("RGB").resize((SIZE // 2, SIZE // 2))
+    tile = Image.new("RGB", (SIZE, SIZE))
+    for (x, y), copy in zip(((0, 0), (SIZE // 2, 0), (0, SIZE // 2), (SIZE // 2, SIZE // 2)),
+                            (img, ImageOps.mirror(img), ImageOps.flip(img), ImageOps.flip(ImageOps.mirror(img)))):
+        tile.paste(copy, (x, y))
+    FOLDER.mkdir(parents=True, exist_ok=True)
+    tile.save(FOLDER / f"{name}.png")
+
+
 def make_all(force=False):
+    for name, menu_name in SORTER_BELTS.items():
+        if belts.spec(menu_name).get("photo"):
+            _own_belt(name, menu_name)
     if not force and all((FOLDER / f"{n}.png").exists() for n in SURFACES):
         return
     rng = np.random.default_rng(7)
@@ -93,7 +120,8 @@ def make_all(force=False):
     laminate(rng, (232, 232, 228), "table_white")
     laminate(rng, (150, 152, 155), "table_grey")
     for name, menu_name in SORTER_BELTS.items():
-        Image.open(belts.path(menu_name)).convert("RGB").resize((SIZE, SIZE)).save(FOLDER / f"{name}.png")
+        if not belts.spec(menu_name).get("photo"):
+            Image.open(belts.path(menu_name)).convert("RGB").resize((SIZE, SIZE)).save(FOLDER / f"{name}.png")
 
 
 def paths():

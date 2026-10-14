@@ -58,8 +58,26 @@ def draw(belt, rng):
     return Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))
 
 
+def available():
+    """Belt names to choose from: the drawn ones, plus your own photo once you've added one."""
+    from . import machine_setup
+    return list(BELTS) + ([machine_setup.OWN_BELT] if machine_setup.has_own_belt() else [])
+
+
+def spec(name):
+    """Look and size of a belt. Your own photo: matte, as wide as you said it is (machine setup)."""
+    from . import machine_setup
+    if name == machine_setup.OWN_BELT:
+        return {"file": machine_setup.OWN_BELT_FILE.name, "photo": True, "specular": 0.1, "shininess": 0.2,
+                "reflectance": 0.0, "span": machine_setup.load()["own_belt_mm"] / 100}
+    return BELTS[name]
+
+
 def path(name):
     """The belt's picture (drawn the first time it's needed)."""
+    from . import machine_setup
+    if name == machine_setup.OWN_BELT:
+        return machine_setup.OWN_BELT_FILE
     belt = BELTS[name]
     out = FOLDER / belt["file"]
     if not out.exists():

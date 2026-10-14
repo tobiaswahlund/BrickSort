@@ -1,4 +1,4 @@
-﻿"""Virtual sorting machine: pieces ride a conveyor belt under a camera and get sorted into bins.
+"""Virtual sorting machine: pieces ride a conveyor belt under a camera and get sorted into bins.
 
 Run:  python -m bricksort.conveyor_demo
 Bins are set in bins.json (button "Edit bins…").
@@ -13,7 +13,7 @@ from tkinter import messagebox, ttk
 import numpy as np
 from PIL import Image, ImageDraw, ImageTk
 
-from . import catalog, config
+from . import belts, catalog, config, machine_setup
 from .demo import reference_image
 from .viewer import PartViewer
 from .ldraw import Library
@@ -172,8 +172,8 @@ class ConveyorDemo(tk.Tk):
         self._mode_shown = SPAWN_TRAINED
         self.change_chosen = ttk.Button(settings, text="Change chosen pieces…", command=self._pick_pieces)
         ttk.Label(settings, text="Belt").grid(row=6, column=0, sticky="w", padx=(8, 4), pady=(2, 8))
-        self.belt = tk.StringVar(value=DEFAULT_BELT)
-        belt = ttk.Combobox(settings, textvariable=self.belt, values=list(BELTS), state="readonly", width=34)
+        self.belt = tk.StringVar(value=machine_setup.load()["belt"] if machine_setup.load()["belt"] in belts.available() else DEFAULT_BELT)
+        belt = ttk.Combobox(settings, textvariable=self.belt, values=belts.available(), state="readonly", width=34)
         belt.grid(row=6, column=1, columnspan=2, sticky="we", padx=(0, 8), pady=(2, 8))
         belt.bind("<<ComboboxSelected>>", lambda e: self._rebuild("Belt changed"))
 
