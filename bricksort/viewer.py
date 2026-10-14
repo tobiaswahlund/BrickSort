@@ -95,3 +95,74 @@ class PartViewer(tk.Label):
         if e.widget is self and self.renderer is not None:
             close_renderer(self.renderer)
             self.renderer = None
+
+
+class LookPreview(tk.Label):
+    """A piece as the training pictures would show it: worn, on your machine's belt, under your lamps,
+    with the plastic look settings. Drag to turn around it, scroll to zoom. show() rebuilds it."""
+
+    def __init__(self, master, lib, size=280):
+        super().__init__(master, bg="#292b30", cursor="fleur", width=size, height=size)
+        self.lib, self.size, self.scene = lib, size, None
+        self.cam = mujoco.MjvCamera()
+        self.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
+        self.cam.azimuth, self.cam.elevation = 60.0, -50.0
+        self.bind("<ButtonPress-1>", lambda e: setattr(self, "last", (e.x, e.y)))
+        self.bind("<B1-Motion>", self._drag)
+        self.bind("<MouseWheel>", self._zoom)
+        self.bind("<Destroy>", lambda e: e.widget is self and self._free())
+
+    def _free(self):
+        if self.scene:
+            self.scene.close()
+            self.scene = None
+        if getattr(self, "renderer", None):
+            close_renderer(self.renderer)
+            self.renderer = None
+
+    def show(self, part_id, rgb, seed=5):
+        """Build the scene for this part and colour with the settings in use now (machine_setup.use)."""
+        from . import config, surfaces
+        from .render import worn_scene
+        self._free()
+        surfaces.refresh()
+        rng = np.random.default_rng(seed)   # same wear and pose each time, so only the settings change
+        verts, faces = self.lib.part_mesh(part_id)
+        tex = config.BIG_DIR / "wear_textures" / "_look_preview.png"
+        tex.parent.mkdir(parents=True, exist_ok=True)
+        self.scene = worn_scene(verts, faces, rng, tex)
+        self.scene.set_color(rgb)
+        self.scene.sorter_look(rng)
+        self.scene.settle(rng)
+        from . import machine_setup
+        belt = machine_setup.load()["belt"]   # the chosen belt underneath, not a random one
+        for i, n in enumerate(surfaces.SURFACES):
+            if surfaces.SORTER_BELTS.get(n) == belt:
+                self.scene.model.geom_matid[self.scene.floor] = self.scene.surface_mats[i]
+        m = self.scene.model
+        self.renderer = mujoco.Renderer(m, min(self.size, 480), min(self.size, 480))
+        self.cam.lookat[:] = self.scene.data.xpos[self.scene.part_body]
+        self.cam.distance = self.scene.radius * 4
+        self.render()
+
+    def render(self):
+        if not self.scene:
+            return
+        self.renderer.update_scene(self.scene.data, camera=self.cam)
+        img = Image.fromarray(self.renderer.render()).resize((self.size, self.size))
+        self.photo = ImageTk.PhotoImage(img)
+        self.configure(image=self.photo, width=self.size, height=self.size)
+
+    def _drag(self, e):
+        dx, dy = e.x - self.last[0], e.y - self.last[1]
+        self.last = (e.x, e.y)
+        self.cam.azimuth -= dx * 0.8
+        self.cam.elevation = float(np.clip(self.cam.elevation - dy * 0.8, -89, -5))   # stay above the belt
+        self.render()
+
+    def _zoom(self, e):
+        if self.scene:
+            r = self.scene.radius
+            self.cam.distance = float(np.clip(self.cam.distance * (0.9 if e.delta > 0 else 1.1), r * 1.5, r * 12))
+            self.render()
+        return "break"

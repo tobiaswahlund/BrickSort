@@ -121,6 +121,12 @@ def texture(rng, level, path):
         x, y, r = *rng.uniform(0, TEX, 2), rng.uniform(15, 50)
         draw.ellipse([x - r, y - r, x + r, y + r], fill=min(255, base + 6))
     img = img.filter(ImageFilter.GaussianBlur(0.5))
+    from . import plastic_look
+    detail_rng = np.random.default_rng(rng.integers(1 << 31))   # drawn either way, so the switch changes nothing else
+    if plastic_look.use_texture():   # real surface detail from your photos (machine setup)
+        detail = plastic_look.surface_texture(detail_rng, TEX)
+        a = np.asarray(img, np.float32) * (1 + plastic_look.TEXTURE_STRENGTH * (detail - 1))
+        img = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
     Image.merge("RGB", [img] * 3).save(path)
 
 

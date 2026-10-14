@@ -186,6 +186,7 @@ class DropScene:
         # (stronger than this washes out the colour, e.g. red turns pink)
         m.mat_specular[self.plastic] = rng.uniform(0.2, 0.45) * (1 - self.dull)  # worn plastic shines less
         m.mat_shininess[self.plastic] = rng.uniform(0.7, 0.9)
+        self._learned_gloss(rng)
 
     def sorter_look(self, rng):
         """Like your sorting machine (machine setup): its belt underneath, its lamps above and a little
@@ -214,6 +215,14 @@ class DropScene:
         m.vis.headlight.diffuse[:] = 0
         m.mat_specular[self.plastic] = rng.uniform(0.3, 0.45) * (1 - self.dull)
         m.mat_shininess[self.plastic] = rng.uniform(0.75, 0.9)
+        self._learned_gloss(rng)
+
+    def _learned_gloss(self, rng):
+        """Shine measured on your real photos instead of the values above, if switched on (machine setup)."""
+        from . import plastic_look
+        g = plastic_look.gloss(rng, self.dull)
+        if g:
+            self.model.mat_specular[self.plastic], self.model.mat_shininess[self.plastic] = g
 
     def drop(self, rng, frame_every=0, camera="side"):
         """Drop the part with a random spin. Yields picture frames if frame_every>0."""

@@ -138,8 +138,12 @@ class TrainingApp(tk.Tk):
         self.rowconfigure(1, weight=1)
 
     # ------------------------------------------------------------------ machine setup
-    def _build_setup(self, tab):
+    def _build_setup(self, outer):
         s = machine_setup.load()
+        tab = ttk.Frame(outer)
+        tab.grid(row=0, column=0, sticky="nw")
+        self.look_frame = ttk.Frame(outer)
+        self.look_frame.grid(row=0, column=1, sticky="nw", padx=(10, 0))
         ttk.Label(tab, text="Make the training pictures look like your own machine. Save, then make the "
                             "training pictures again and train.", wraplength=440, foreground=MUTED
                   ).pack(anchor="w", pady=(0, 6))
@@ -199,6 +203,91 @@ class TrainingApp(tk.Tk):
                               "train (this takes some hours).", wraplength=420).pack(anchor="w", padx=8, pady=(4, 2))
         self.remake_btn = ttk.Button(again, text="Make all training pictures again…", command=self._remake)
         self.remake_btn.pack(anchor="w", padx=8, pady=(0, 6))
+        self._build_look(self.look_frame, s)
+
+    def _build_look(self, frame, s):
+        """Plastic look learned from your photos, and a 3D preview of a piece with all the settings."""
+        box = ttk.LabelFrame(frame, text="Plastic look (learned from your photos)")
+        box.pack(fill="x")
+        self.sv["real_gloss"] = tk.BooleanVar(value=s["real_gloss"])
+        self.sv["real_texture"] = tk.BooleanVar(value=s["real_texture"])
+        ttk.Checkbutton(box, text="Shine like my photos", variable=self.sv["real_gloss"],
+                        command=self._update_look).pack(anchor="w", padx=8, pady=(4, 0))
+        ttk.Checkbutton(box, text="Surface detail from my photos", variable=self.sv["real_texture"],
+                        command=self._update_look).pack(anchor="w", padx=8)
+        self.look_text = ttk.Label(box, text="", foreground=MUTED, wraplength=290, justify="left")
+        self.look_text.pack(anchor="w", padx=8, pady=(2, 0))
+        ttk.Button(box, text="Learn from my photos", command=self._learn_look).pack(anchor="w", padx=8, pady=6)
+        self._show_learned()
+
+        pv = ttk.LabelFrame(frame, text="Preview (drag to turn, scroll to zoom)")
+        pv.pack(fill="x", pady=(8, 0))
+        self.look_holder = ttk.Frame(pv, width=280, height=280)
+        self.look_holder.pack(padx=8, pady=6)
+        self.look_holder.pack_propagate(False)
+        ttk.Label(self.look_holder, text="Press Update to see a piece\nwith these settings.", foreground=MUTED,
+                  justify="center").place(relx=0.5, rely=0.5, anchor="center")
+        row = ttk.Frame(pv)
+        row.pack(fill="x", padx=8, pady=(0, 6))
+        ttk.Button(row, text="Update", command=self._update_look).pack(side="left")
+        ttk.Button(row, text="Another piece", command=lambda: self._update_look(new_piece=True)).pack(side="left",
+                                                                                                    padx=6)
+        self.look_piece = None
+
+    def _show_learned(self):
+        from . import plastic_look
+        got = plastic_look.learned()
+        if not got:
+            self.look_text.configure(text="Not learned yet: press Learn from my photos (about a minute).")
+            return
+        self.look_text.configure(text=f"Learned {got['learned']} from {got['photos']} photos: highlights cover "
+                                      f"{got['photo_highlights']:.1%} of a piece (renders: "
+                                      f"{got['render_highlights']:.1%}); {got['patches']} surface patches.")
+
+    def _learn_look(self):
+        if getattr(self, "_learning", False):
+            return
+        self._learning = True
+        self.look_text.configure(text="Learning from your photos … (about a minute)")
+
+        def work():
+            from . import plastic_look
+            try:
+                plastic_look.learn(600, log=lambda t: self.queue.put(("line", t)))
+                plastic_look._patches = None   # use the new patches from now on
+            except Exception as e:
+                self.queue.put(("line", f"Learning failed: {e.__class__.__name__}: {e}"))
+            self.queue.put(("learned", None))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _update_look(self, new_piece=False):
+        """Rebuild the 3D preview with the settings as they are in the tab (not saved)."""
+        import numpy as np
+        from . import catalog
+        from .viewer import LookPreview
+        machine_setup.use(self._setup_values())
+        try:
+            if getattr(self, "lib", None) is None:
+                from .ldraw import Library
+                self.lib = Library()
+            if self.look_piece is None or new_piece:
+                rng = np.random.default_rng()
+                choices = ["3001", "3003", "3039", "3062b", "2420", "3020", "4070", "3040", "3665", "6141"]
+                table = catalog.colors()
+                names = ["Red", "Blue", "Yellow", "Green", "Orange", "Medium Azure", "Lime", "Dark Bluish Gray"]
+                cols = [rgb for n, rgb in table.values() if n in names]
+                self.look_piece = (choices[rng.integers(len(choices))], cols[rng.integers(len(cols))])
+            if not hasattr(self, "look_view"):
+                for w in self.look_holder.winfo_children():
+                    w.destroy()
+                self.look_view = LookPreview(self.look_holder, self.lib, size=280)
+                self.look_view.pack()
+            self.look_view.show(*self.look_piece)
+        except Exception as e:
+            self.write(f"Preview failed: {e.__class__.__name__}: {e}")
+        finally:
+            machine_setup.load_saved()
 
     def _setup_values(self):
         """The set-up as typed in the tab, checked and kept within sensible limits."""
@@ -421,6 +510,10 @@ class TrainingApp(tk.Tk):
                     self.model_text.configure(text=value)
                 elif kind == "preview":
                     self._show_preview(*value)
+                elif kind == "learned":
+                    self._learning = False
+                    self._show_learned()
+                    self._update_look()
                 elif kind == "done":
                     self._finished(value)
         except queue.Empty:
