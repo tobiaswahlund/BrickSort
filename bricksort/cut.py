@@ -8,12 +8,13 @@ For each photo the pieces are found automatically and shown with numbered boxes.
   right-click a box to remove it.
 - The model's guess for part and colour is filled in; fix what's wrong
   (clear the part number to skip a piece).
-- "Done: save pieces, next photo" files each piece in my_photos/<part>/<colour>/ and
+- "Save pieces, next photo" files each piece in my_photos/<part>/<colour>/ and
   moves the photo to my_photos/_to_cut/done/.
 - Unfinished photos keep their boxes and typed answers (my_photos/_to_cut/progress/):
-  saved when you go to another photo, close the window, or press "Save progress".
+  saved when you go to another photo, close the window, or press "Save draft".
 """
 import json
+import re
 import time
 import tkinter as tk
 from tkinter import font as tkfont
@@ -96,6 +97,65 @@ class _Value:
         self.v = v
 
 
+UNKNOWN_VERSION = "Unknown version"
+
+
+class PartChooser:
+    """Part number box, plus a second dropdown for its version when it has several (3062a / 3062b).
+    get() gives the number to save under."""
+
+    def __init__(self, row, line2, cutter):
+        self.cutter, self.on_change, self.shown_for = cutter, None, None
+        self.number = ttk.Combobox(row, width=10, values=cutter.numbers)
+        self.number.pack(side="left", padx=4)
+        wide_dropdown(self.number)
+        self.version = ttk.Combobox(line2, width=34, state="readonly")
+        wide_dropdown(self.version)
+        for seq in ("<KeyRelease>", "<<ComboboxSelected>>"):
+            self.number.bind(seq, lambda e: self._changed(), add="+")
+        self.version.bind("<<ComboboxSelected>>", lambda e: self._fire())
+
+    def widgets(self):
+        return self.number, self.version
+
+    def _fire(self):
+        if self.on_change:
+            self.on_change()
+
+    def _changed(self):
+        n = self.number.get().strip()
+        found = self.cutter.variants(n)
+        key = re.match(r"\d*", n).group()
+        if not found:
+            self.version.pack_forget()
+            self.shown_for = None
+        elif key != self.shown_for:   # a new number: offer its versions
+            names = self.cutter.rebrickable
+            self.version.configure(values=[UNKNOWN_VERSION] + [f"{v}  {names.get(v, '')}" for v in found])
+            exact = next((v for v in found if v == n.lower()), None)
+            self.version.set(f"{exact}  {names.get(exact, '')}" if exact else UNKNOWN_VERSION)
+            self.version.pack(side="top", anchor="w", pady=(0, 2), before=self.version.master.winfo_children()[0])
+            self.shown_for = key
+        self._fire()
+
+    def get(self):
+        n = self.number.get().strip()
+        if self.shown_for is None or "+" in n:
+            return n
+        v = self.version.get()
+        return self.cutter.default_version(n) if v == UNKNOWN_VERSION else v.split()[0]
+
+    def set(self, pid):
+        """Show a full number: the base number in the first box, the version in the second."""
+        pid = (pid or "").strip()
+        found = self.cutter.variants(pid)
+        self.number.set(re.match(r"\d*", pid).group() if found else pid)
+        self.shown_for = None
+        self._changed()
+        if found and pid.lower() in found:
+            self.version.set(f"{pid.lower()}  {self.cutter.rebrickable.get(pid.lower(), '')}")
+
+
 def find_pieces(img):
     """Boxes (x0, y0, x1, y1) in the photo's own pixels, for things that differ from the surface."""
     small = img.copy()
@@ -154,6 +214,24 @@ class Cutter(tk.Tk):
         self.part_ids = [p["id"] for p in parts]  # suggestions; any other number can be typed
         self.rebrickable = {r["part_num"]: r["name"] for r in catalog.read_csv("parts")}
         self.custom_names = {p["id"]: p["name"] for p in parts if p.get("custom")}
+        # part numbers grouped by their digits: 3062 -> [3062b, 3062a] (known to the model first;
+        # printed versions like 3062bpr0001 are left out, they're saved as the plain part anyway)
+        known = set(self.part_ids)
+        self._versions = {}
+        for pid in self.rebrickable:
+            m = re.fullmatch(r"(\d+)([a-z]\d*)?", pid)
+            if m:
+                self._versions.setdefault(m.group(1), []).append(pid)
+        for base, ids in self._versions.items():
+            ids.sort(key=lambda p: (p not in known, p))
+        # the number box offers each piece once (3062, not 3062a and 3062b); exact numbers can still be typed
+        bases = []
+        for pid in self.part_ids:
+            m = re.fullmatch(r"(\d+)([a-z]\d*)?", pid)
+            b = m.group(1) if m and len(self._versions.get(m.group(1), [])) > 1 else pid
+            if b not in bases:
+                bases.append(b)
+        self.numbers = bases
         colors = catalog.colors(include_trans=True)
         self.color_names = catalog.color_choices()  # most used colours first
         self.color_by_id = {cid: n for cid, (n, _) in colors.items()}
@@ -162,17 +240,24 @@ class Cutter(tk.Tk):
             from .model import Recognizer
             self.recognizer = Recognizer()
         self.guesses = {}
-        self.canvas = tk.Canvas(self, width=VIEW, height=VIEW, bg="#ddd", highlightthickness=0)
-        self.canvas.grid(row=0, column=0, rowspan=2)
+        self.scale = 1.0
+        # the photo fills whatever room the window gives it (it's redrawn when the window changes size)
+        photo_box = ttk.LabelFrame(self, text="Photo (drag to add a box, drag an edge to resize, right-click to remove)")
+        photo_box.grid(row=0, column=0, sticky="nsew")
+        self.canvas = tk.Canvas(photo_box, width=VIEW, height=VIEW, bg="#ddd", highlightthickness=0)
+        self.canvas.pack(fill="both", expand=True, padx=8, pady=6)
         self.canvas.bind("<ButtonPress-1>", self._press)
         self.canvas.bind("<B1-Motion>", self._drag)
         self.canvas.bind("<ButtonRelease-1>", self._release)
         self.canvas.bind("<Button-3>", self._remove)
-        self.info = Label(self, text="", wraplength=430, justify="left")
-        self.info.grid(row=0, column=1, sticky="nw", padx=10)
-        holder = ttk.Frame(self)
-        holder.grid(row=1, column=1, sticky="nsew", padx=10)
-        self.rows_canvas = tk.Canvas(holder, width=430, height=VIEW - 120, highlightthickness=0)
+        self.canvas.bind("<Configure>", lambda e: self._fit())
+        pieces = ttk.LabelFrame(self, text="Pieces")
+        pieces.grid(row=0, column=1, sticky="nsew", padx=(8, 0))
+        self.info = Label(pieces, text="", wraplength=430, justify="left")
+        self.info.pack(anchor="w", padx=8, pady=(6, 4))
+        holder = ttk.Frame(pieces)
+        holder.pack(fill="both", expand=True, padx=8, pady=(0, 6))
+        self.rows_canvas = tk.Canvas(holder, width=430, height=300, highlightthickness=0)
         scroll = ttk.Scrollbar(holder, orient="vertical", command=self.rows_canvas.yview)
         self.rows = ttk.Frame(self.rows_canvas)
         self.rows.bind("<Configure>", lambda e: self.rows_canvas.configure(scrollregion=self.rows_canvas.bbox("all")))
@@ -180,16 +265,18 @@ class Cutter(tk.Tk):
         self.rows_canvas.configure(yscrollcommand=scroll.set)
         self.rows_canvas.bind("<MouseWheel>", self._wheel)
         self.rows.bind("<MouseWheel>", self._wheel)
-        self.rows_canvas.pack(side="left", fill="both")
+        self.rows_canvas.pack(side="left", fill="both", expand=True)
         scroll.pack(side="right", fill="y")
         bar = ttk.Frame(self)
-        bar.grid(row=2, column=0, columnspan=2, sticky="we", pady=(8, 0))
-        ttk.Button(bar, text="Done: save pieces, next photo", command=self.save).pack(side="right")
-        ttk.Button(bar, text="Next photo ▶", command=lambda: self.go(+1)).pack(side="right", padx=6)
-        ttk.Button(bar, text="◀ Previous photo", command=lambda: self.go(-1)).pack(side="right")
-        ttk.Button(bar, text="Save progress", command=self.save_draft).pack(side="left")
+        bar.grid(row=1, column=0, columnspan=2, sticky="we", pady=(8, 0))
+        ttk.Button(bar, text="Save pieces, next photo ▶", command=self.save).pack(side="right")
+        ttk.Button(bar, text="Skip ▶", command=lambda: self.go(+1)).pack(side="right", padx=6)
+        ttk.Button(bar, text="◀ Back", command=lambda: self.go(-1)).pack(side="right")
+        ttk.Button(bar, text="Save draft", command=self.save_draft).pack(side="left")
         self.status = Label(bar, text="", foreground="#666")
         self.status.pack(side="left", padx=8)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.path = None
         self.go(0)
@@ -230,9 +317,7 @@ class Cutter(tk.Tk):
     def show(self, path, n_photos):
         self.path = path
         self.img = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
-        self.scale = VIEW / max(self.img.size)
-        shown = self.img.resize((int(self.img.width * self.scale), int(self.img.height * self.scale)))
-        self.tk_img = ImageTk.PhotoImage(shown)
+        self._fit(draw=False)
         draft = self._draft_file(path)
         if draft.exists():  # pick up where you left off
             saved = json.loads(draft.read_text(encoding="utf-8"))
@@ -249,11 +334,30 @@ class Cutter(tk.Tk):
                                  "Right-click a box to remove it.")
         self._redraw()
 
-    def _redraw(self):
+    def _fit(self, draw=True):
+        """Scale the photo to the room the canvas has (boxes are kept in the photo's own pixels)."""
+        if getattr(self, "img", None) is None:
+            return
+        w, h = self.canvas.winfo_width(), self.canvas.winfo_height()
+        if w < 50 or h < 50:   # not laid out yet
+            w = h = VIEW
+        scale = min(w / self.img.width, h / self.img.height)
+        if draw and abs(scale - self.scale) < 1e-3 and getattr(self, "tk_img", None):
+            return
+        self.scale = scale
+        shown = self.img.resize((max(1, int(self.img.width * scale)), max(1, int(self.img.height * scale))))
+        self.tk_img = ImageTk.PhotoImage(shown)
+        if draw:
+            self._draw_photo()
+
+    def _draw_photo(self):
         c = self.canvas
         c.delete("all")
         c.create_image(0, 0, image=self.tk_img, anchor="nw")
         self._draw_boxes()
+
+    def _redraw(self):
+        self._draw_photo()
         # keep what was typed for boxes that still exist
         old = {id(box): (p.get(), col.get()) for box, p, col in self.fields}
         for w in self.rows.winfo_children():
@@ -267,13 +371,15 @@ class Cutter(tk.Tk):
             lbl.image = thumb
             lbl.pack(side="left")
             Label(row, text=f"{i + 1}.", width=3).pack(side="left")
-            part = ttk.Combobox(row, width=12, values=self.part_ids)
-            part.pack(side="left", padx=4)
-            col = ttk.Combobox(row, width=24, values=self.color_names)
-            col.pack(side="left")
-            for combo in (part, col):
-                wide_dropdown(combo)
+            line2 = ttk.Frame(self.rows)   # under the row: the version dropdown (if any) and the name
+            line2.pack(fill="x", padx=(70, 0))
+            name = Label(line2, text="", foreground="#666", wraplength=380)
+            part = PartChooser(row, line2, self)
+            col = ttk.Combobox(row, width=22, values=self.color_names)
+            col.pack(side="left", padx=(4, 0))
+            wide_dropdown(col)
             autocomplete(col, self.color_names)
+            name.pack(side="top", anchor="w")
             guess = self._guess(box)
             if id(box) in old:
                 part.set(old[id(box)][0])
@@ -286,16 +392,27 @@ class Cutter(tk.Tk):
             if guess:
                 Label(row, text=f"model: {guess[2]:.0%}", foreground="#666").pack(side="left", padx=4)
             # any number can be typed; show what Rebrickable calls it
-            name = Label(self.rows, text="", foreground="#666", wraplength=420)
-            name.pack(anchor="w", padx=(70, 0))
-            part.bind("<KeyRelease>", lambda e, p=part, n=name, c=col: (self._name(p, n), self._colour_mode(p, c)))
-            part.bind("<<ComboboxSelected>>", lambda e, p=part, n=name, c=col: (self._name(p, n), self._colour_mode(p, c)))
-            self._name(part, name)
-            self._colour_mode(part, col)
+            part.on_change = lambda p=part, n=name, c=col: (self._name(p, n), self._colour_mode(p, c))
+            part.on_change()
             # the mouse wheel scrolls the list, never the dropdown values
-            for w in (row, part, col, lbl, name, *row.winfo_children()):
+            for w in (row, line2, col, lbl, name, *part.widgets(), *row.winfo_children()):
                 w.bind("<MouseWheel>", self._wheel)
             self.fields.append((box, part, col))
+
+    # ---------- part numbers and their versions (3062 -> 3062a, 3062b) ----------
+    def variants(self, number):
+        """All versions of a part number that Rebrickable has, the ones the model knows first.
+        '3062' and '3062b' both give ['3062b', '3062a']; a number without versions gives []."""
+        m = re.fullmatch(r"(\d+)([a-z]\d*)?", number.strip().lower())
+        if not m:
+            return []
+        found = self._versions.get(m.group(1), [])
+        return found if len(found) > 1 else []
+
+    def default_version(self, number):
+        """'Unknown version': saved as the version the model knows (it treats versions as the same piece)."""
+        found = self.variants(number)
+        return found[0] if found else number
 
     def _colour_mode(self, part, col):
         """For 'multiple' the second box asks whether the pieces are stuck together or just touching."""
@@ -390,7 +507,9 @@ class Cutter(tk.Tk):
         elif not pid:
             label.configure(text="(skipped)")
         elif pid in self.rebrickable:
-            label.configure(text=self.rebrickable[pid])
+            unsure = isinstance(part, PartChooser) and part.shown_for and part.version.get() == UNKNOWN_VERSION
+            label.configure(text=f"Version unknown: saved as {pid}, which the model treats as the same piece"
+                            if unsure else self.rebrickable[pid])
         elif pid in self.custom_names:
             label.configure(text=self.custom_names[pid] + " (your own piece)")
         else:
@@ -488,6 +607,10 @@ class Cutter(tk.Tk):
                 colour = "Unknown"
             if pid == catalog.MULTIPLE:  # my_photos/_multiple/Stuck or /Not_touching
                 folder = config.MY_PHOTOS / "_multiple" / ("Stuck" if colour == "Stuck" else "Not_touching")
+            elif colour in ("", "Unknown") and pid not in catalog.SPECIAL and "+" not in part.get():
+                # colour not known yet: into Check colours' folder, where you give it its colour later
+                from .colour_review import NOT_SPECIFIED, SOURCE
+                folder = SOURCE / pid / NOT_SPECIFIED
             else:
                 folder = config.MY_PHOTOS / pid
                 if colour and colour != "Unknown":
@@ -518,5 +641,13 @@ class Cutter(tk.Tk):
         self.status.configure(text=f"Saved {saved} pieces from the last photo.")
 
 
+def run():
+    app = Cutter()
+    try:
+        app.mainloop()
+    except tk.TclError:   # closed straight away (no photos to cut)
+        pass
+
+
 if __name__ == "__main__":
-    Cutter().mainloop()
+    run()
