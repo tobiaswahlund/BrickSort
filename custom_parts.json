@@ -1,0 +1,50 @@
+[
+ {
+  "id": "combo-3937+6134",
+  "kind": "combo",
+  "parts": [
+   "3937",
+   "6134"
+  ],
+  "tags": [
+   "combo"
+  ],
+  "name": "Hinge Brick 1 x 2 Base + Hinge Brick 2 x 2 Top Plate Thin (together)",
+  "category": "hinges, arms and turntables"
+ },
+ {
+  "id": "combo-3679+3680",
+  "kind": "combo",
+  "parts": [
+   "3679",
+   "3680"
+  ],
+  "tags": [
+   "combo"
+  ],
+  "name": "Turntable 2 x 2 Plate - Top + Turntable 2 x 2 Plate, Base (together)",
+  "category": "hinges, arms and turntables"
+ },
+ {
+  "id": "combo-4213+4625",
+  "kind": "combo",
+  "parts": [
+   "4213",
+   "4625"
+  ],
+  "tags": [
+   "combo"
+  ],
+  "name": "Hinge Vehicle Roof 4 x 4 + Hinge Tile 1 x 4 (together)",
+  "category": "hinges, arms and turntables"
+ },
+ {
+  "id": "50995",
+  "kind": "custom",
+  "name": "Minifig helmet 50995 (e.g. 50995pr0003, white with green stripes)",
+  "category": "minifig headwear",
+  "tags": [
+   "helmet"
+  ]
+ }
+]

@@ -1,0 +1,33 @@
+# Private notes
+PLAN.md
+
+# Photos, datasets and everything made from them (personal, large, or not ours to share)
+my_photos/
+corrections/
+rest_bin/
+sorted_log/
+_check/
+Dataset_0*/
+reference/
+spot_check_results.json
+
+# Trained models and checkpoints (shared as a Release download, not in git;
+# checkpoints also contain local paths)
+model/
+*.pt
+
+# Rebuilt automatically when missing
+bins.json
+belt_pieces.json
+
+# Local tools, logs and archives
+.claude/
+*.zip
+MUJOCO_LOG.TXT
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

@@ -1,0 +1,3632 @@
+{
+ "3023": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "6141": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3024": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3004": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3005": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3710": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "2780": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "3069b": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "54200": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 1.9,
+  "flat": false
+ },
+ "98138": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "3020": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3003": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3022": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3010": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3070b": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "3001": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3021": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3666": {
+  "length": 6.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3623": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3062b": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "2412b": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "25269": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "2431": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "61332": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.8,
+  "flat": false
+ },
+ "2420": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3068b": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "15573": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3622": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3795": {
+  "length": 6.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3009": {
+  "length": 6.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3040b": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "43093": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "85861": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "6558": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "32062": {
+  "length": 2.0,
+  "width": 0.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "85984": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.9,
+  "flat": false
+ },
+ "11477": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "6636": {
+  "length": 6.0,
+  "width": 1.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "4032a": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3460": {
+  "length": 8.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "4274": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "24866": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "4070": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "15068": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "35480": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3002": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3039": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "87079": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "3713": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "3034": {
+  "length": 8.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "2357": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3941": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "87580": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3700": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "87087": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3665": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "59900": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "4519": {
+  "length": 3.0,
+  "width": 0.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "30136": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "63864": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "3660": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "4162": {
+  "length": 8.0,
+  "width": 1.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "32028": {
+  "length": 2.0,
+  "width": 1.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "32123b": {
+  "length": 1.0,
+  "width": 0.5,
+  "height": 2.2,
+  "flat": false
+ },
+ "42924": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 1.8,
+  "flat": false
+ },
+ "15712": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "99207": {
+  "length": 2.0,
+  "width": 1.5,
+  "height": 5.0,
+  "flat": false
+ },
+ "99780": {
+  "length": 2.0,
+  "width": 1.5,
+  "height": 2.5,
+  "flat": false
+ },
+ "3008": {
+  "length": 8.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "44728": {
+  "length": 2.0,
+  "width": 1.5,
+  "height": 5.5,
+  "flat": false
+ },
+ "3673": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "4477": {
+  "length": 10.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "11211": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "6091": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 4.0,
+  "flat": false
+ },
+ "2877": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "20482": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "2654": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "98283": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "99563": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "59443": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "22885": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 5.5,
+  "flat": false
+ },
+ "32607": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "33909": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "6536": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 4.8,
+  "flat": false
+ },
+ "3705": {
+  "length": 4.0,
+  "width": 0.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "3749": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "60897": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3031": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "24246": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "4286": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "60478": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "32054": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "3032": {
+  "length": 6.0,
+  "width": 4.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "6541": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3065": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "32952": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 5.5,
+  "flat": false
+ },
+ "48336": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "50950": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "2456": {
+  "length": 6.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "99781": {
+  "length": 2.0,
+  "width": 1.5,
+  "height": 3.0,
+  "flat": false
+ },
+ "2540": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "63868": {
+  "length": 2.5,
+  "width": 1.0,
+  "height": 1.9,
+  "flat": false
+ },
+ "30414": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3832": {
+  "length": 10.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "27925": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "3794a": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "18654": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "3701": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "41740": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "15672": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "32013": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "30374": {
+  "length": 0.5,
+  "width": 0.5,
+  "height": 10.0,
+  "flat": false
+ },
+ "32523": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "3037": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "26601": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "49307": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "32140": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "4740": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "32316": {
+  "length": 5.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "32064a": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "89678": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "53451": {
+  "length": 1.5,
+  "width": 0.5,
+  "height": 1.8,
+  "flat": false
+ },
+ "61252": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 1.9,
+  "flat": false
+ },
+ "93273": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "41677": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.2,
+  "flat": true
+ },
+ "26603": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "32000": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3298": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "61409": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.9,
+  "flat": false
+ },
+ "32073": {
+  "length": 5.0,
+  "width": 0.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "3035": {
+  "length": 8.0,
+  "width": 4.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "18674": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "62462": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "32524": {
+  "length": 7.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "3245c": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "6632": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 1.2,
+  "flat": true
+ },
+ "24201": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "11214": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "60483": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "87994": {
+  "length": 0.5,
+  "width": 0.5,
+  "height": 7.5,
+  "flat": false
+ },
+ "99206": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "4081b": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "14769": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "28192": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "60592": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "60479": {
+  "length": 12.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "2445": {
+  "length": 12.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "42003": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 7.2,
+  "flat": false
+ },
+ "3706": {
+  "length": 6.0,
+  "width": 0.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "3007": {
+  "length": 8.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "32526": {
+  "length": 5.0,
+  "width": 3.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "32828": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "34103": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "33291": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "14719": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "35787": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "36840": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "60601": {
+  "length": 1.5,
+  "width": 0.0,
+  "height": 4.9,
+  "flat": false
+ },
+ "2432": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 4.0,
+  "flat": false
+ },
+ "11153": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "26047": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "60470b": {
+  "length": 2.0,
+  "width": 1.5,
+  "height": 1.9,
+  "flat": false
+ },
+ "32002": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "4589": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "2450": {
+  "length": 3.0,
+  "width": 3.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3794b": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "11212": {
+  "length": 3.0,
+  "width": 3.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "29119": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "29120": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "49668": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "60481": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "4865b": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "11090": {
+  "length": 0.5,
+  "width": 0.5,
+  "height": 4.3,
+  "flat": false
+ },
+ "44861": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.3,
+  "flat": false
+ },
+ "32803": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "11476": {
+  "length": 2.0,
+  "width": 1.5,
+  "height": 1.9,
+  "flat": false
+ },
+ "37352": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "32034": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "73825": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 5.0,
+  "flat": false
+ },
+ "3659": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "40490": {
+  "length": 9.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "3036": {
+  "length": 8.0,
+  "width": 6.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "43722": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "32184": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 7.2,
+  "flat": false
+ },
+ "3894": {
+  "length": 6.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "43723": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "60474": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "63965": {
+  "length": 0.5,
+  "width": 0.5,
+  "height": 15.1,
+  "flat": false
+ },
+ "48729b": {
+  "length": 1.0,
+  "width": 0.5,
+  "height": 4.8,
+  "flat": false
+ },
+ "4282": {
+  "length": 16.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "32278": {
+  "length": 15.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "4304": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "30357": {
+  "length": 3.0,
+  "width": 3.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "85080": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "18651": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "32525": {
+  "length": 11.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "3709": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "6587": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "41770": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "36841": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "87083": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "87552": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "41769": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "2555": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "27263": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "3958": {
+  "length": 6.0,
+  "width": 6.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "92280": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "4865a": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "86996": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "26604": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "11458": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.9,
+  "flat": false
+ },
+ "4460b": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 9.5,
+  "flat": false
+ },
+ "32039": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "14716": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 9.5,
+  "flat": false
+ },
+ "23443": {
+  "length": 0.5,
+  "width": 0.5,
+  "height": 4.5,
+  "flat": false
+ },
+ "3702": {
+  "length": 8.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "30565": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3742": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 0.8,
+  "flat": true
+ },
+ "69729": {
+  "length": 6.0,
+  "width": 2.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "78329": {
+  "length": 5.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "4085c": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3747b": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "14704": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "3297": {
+  "length": 4.0,
+  "width": 3.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "6231": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "60475b": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3176": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3030": {
+  "length": 10.0,
+  "width": 4.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "15535": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "18677": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.9,
+  "flat": false
+ },
+ "65304": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.1,
+  "flat": false
+ },
+ "3703": {
+  "length": 16.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "6111": {
+  "length": 10.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "22388": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "24309": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "92593": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "79389": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 5.5,
+  "flat": false
+ },
+ "4624": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "6014b": {
+  "length": 1.5,
+  "width": 1.5,
+  "height": 3.3,
+  "flat": false
+ },
+ "3386": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "30153": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.8,
+  "flat": false
+ },
+ "32016": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 3.6,
+  "flat": false
+ },
+ "3633": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "78258": {
+  "length": 0.5,
+  "width": 0.5,
+  "height": 5.0,
+  "flat": false
+ },
+ "6019": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "3707": {
+  "length": 8.0,
+  "width": 0.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "47457": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "2454b": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 15.5,
+  "flat": false
+ },
+ "3033": {
+  "length": 10.0,
+  "width": 6.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "73230": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "32449": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 1.2,
+  "flat": true
+ },
+ "22385": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "3045": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "87620": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "32123a": {
+  "length": 1.0,
+  "width": 0.5,
+  "height": 2.2,
+  "flat": false
+ },
+ "2449": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 9.5,
+  "flat": false
+ },
+ "88072": {
+  "length": 2.0,
+  "width": 1.5,
+  "height": 3.0,
+  "flat": false
+ },
+ "44294": {
+  "length": 7.0,
+  "width": 0.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "51739": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "15379": {
+  "length": 2.5,
+  "width": 1.5,
+  "height": 1.6,
+  "flat": false
+ },
+ "2423": {
+  "length": 4.0,
+  "width": 2.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "6112": {
+  "length": 12.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "41682": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "65487": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "11203": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "6589": {
+  "length": 1.5,
+  "width": 0.5,
+  "height": 4.0,
+  "flat": false
+ },
+ "3484": {
+  "length": 1.0,
+  "width": 0.5,
+  "height": 4.6,
+  "flat": false
+ },
+ "3029": {
+  "length": 12.0,
+  "width": 4.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3873": {
+  "length": 2.5,
+  "width": 1.5,
+  "height": 1.6,
+  "flat": false
+ },
+ "3678b": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "3641": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 4.5,
+  "flat": false
+ },
+ "3829c01": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 5.8,
+  "flat": false
+ },
+ "1748": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "4733": {
+  "length": 1.5,
+  "width": 1.5,
+  "height": 3.5,
+  "flat": false
+ },
+ "41239": {
+  "length": 13.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "2453b": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 15.5,
+  "flat": false
+ },
+ "6005": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 6.0,
+  "flat": false
+ },
+ "60596": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 18.5,
+  "flat": false
+ },
+ "24299": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "92947": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3957a": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 12.0,
+  "flat": false
+ },
+ "88323": {
+  "length": 5.0,
+  "width": 2.0,
+  "height": 2.6,
+  "flat": false
+ },
+ "3895": {
+  "length": 12.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "28802": {
+  "length": 4.0,
+  "width": 1.5,
+  "height": 3.0,
+  "flat": false
+ },
+ "30503": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "93274": {
+  "length": 4.0,
+  "width": 1.5,
+  "height": 5.5,
+  "flat": false
+ },
+ "60593": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 9.5,
+  "flat": false
+ },
+ "24307": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "15207": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "3957b": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 12.0,
+  "flat": false
+ },
+ "4216": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "2454a": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 15.5,
+  "flat": false
+ },
+ "2465": {
+  "length": 16.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "70681": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "2458": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "6538b": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.3,
+  "flat": false
+ },
+ "32064b": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "27507": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "4185": {
+  "length": 3.0,
+  "width": 0.5,
+  "height": 7.5,
+  "flat": false
+ },
+ "32270": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 4.2,
+  "flat": false
+ },
+ "30360": {
+  "length": 6.0,
+  "width": 3.0,
+  "height": 8.5,
+  "flat": false
+ },
+ "3068": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "3626": {
+  "length": 1.5,
+  "width": 1.5,
+  "height": 3.5,
+  "flat": false
+ },
+ "6249": {
+  "length": 6.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "2530": {
+  "length": 1.0,
+  "width": 0.5,
+  "height": 9.5,
+  "flat": false
+ },
+ "2561": {
+  "length": 1.5,
+  "width": 0.5,
+  "height": 13.7,
+  "flat": false
+ },
+ "30056": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "30104": {
+  "length": 17.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "30173a": {
+  "length": 1.0,
+  "width": 0.5,
+  "height": 14.0,
+  "flat": false
+ },
+ "30332": {
+  "length": 8.0,
+  "width": 1.0,
+  "height": 18.1,
+  "flat": false
+ },
+ "30355": {
+  "length": 12.0,
+  "width": 6.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "30384": {
+  "length": 7.0,
+  "width": 4.0,
+  "height": 6.0,
+  "flat": false
+ },
+ "32532": {
+  "length": 8.0,
+  "width": 6.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3456": {
+  "length": 14.0,
+  "width": 6.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3626b": {
+  "length": 1.5,
+  "width": 1.5,
+  "height": 3.5,
+  "flat": false
+ },
+ "3820": {
+  "length": 1.5,
+  "width": 0.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "3823": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "3829": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 5.8,
+  "flat": false
+ },
+ "3847": {
+  "length": 1.5,
+  "width": 0.5,
+  "height": 10.0,
+  "flat": false
+ },
+ "3959": {
+  "length": 2.5,
+  "width": 1.0,
+  "height": 3.2,
+  "flat": false
+ },
+ "4032": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "4864": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "4864a": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "4866": {
+  "length": 4.0,
+  "width": 3.0,
+  "height": 4.5,
+  "flat": false
+ },
+ "55296": {
+  "length": 2.5,
+  "width": 1.0,
+  "height": 5.1,
+  "flat": false
+ },
+ "59275": {
+  "length": 2.5,
+  "width": 1.5,
+  "height": 0.8,
+  "flat": true
+ },
+ "6041": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 7.2,
+  "flat": false
+ },
+ "6182": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "62808": {
+  "length": 2.5,
+  "width": 0.5,
+  "height": 3.2,
+  "flat": false
+ },
+ "6583": {
+  "length": 6.0,
+  "width": 1.5,
+  "height": 6.0,
+  "flat": false
+ },
+ "670": {
+  "length": 6.0,
+  "width": 1.0,
+  "height": 30.5,
+  "flat": false
+ },
+ "4079": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 6.0,
+  "flat": false
+ },
+ "970c00": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 6.4,
+  "flat": false
+ },
+ "10197": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 4.8,
+  "flat": false
+ },
+ "10201": {
+  "length": 4.0,
+  "width": 1.5,
+  "height": 3.0,
+  "flat": false
+ },
+ "10247": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 2.9,
+  "flat": false
+ },
+ "10288": {
+  "length": 3.0,
+  "width": 2.5,
+  "height": 2.5,
+  "flat": false
+ },
+ "10314": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 4.0,
+  "flat": false
+ },
+ "10928": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 3.1,
+  "flat": false
+ },
+ "11213": {
+  "length": 6.0,
+  "width": 6.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "11215": {
+  "length": 5.0,
+  "width": 2.0,
+  "height": 4.5,
+  "flat": false
+ },
+ "11272": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "11478": {
+  "length": 5.0,
+  "width": 1.0,
+  "height": 1.2,
+  "flat": true
+ },
+ "13349": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "13547": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "13548": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "13731": {
+  "length": 10.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "14395": {
+  "length": 5.0,
+  "width": 1.0,
+  "height": 12.5,
+  "flat": false
+ },
+ "14417": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "14419": {
+  "length": 3.5,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "14720": {
+  "length": 5.0,
+  "width": 3.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "15070": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "15092": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 4.0,
+  "flat": false
+ },
+ "15100": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "15254": {
+  "length": 6.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "15332": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "15392": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "15395": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "15397": {
+  "length": 3.0,
+  "width": 3.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "15460": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 7.0,
+  "flat": false
+ },
+ "15461": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 7.0,
+  "flat": false
+ },
+ "15470": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "15706": {
+  "length": 4.5,
+  "width": 4.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "16577": {
+  "length": 8.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "17114": {
+  "length": 5.5,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "17485": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "18649": {
+  "length": 3.5,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "18653": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "18838": {
+  "length": 12.0,
+  "width": 1.0,
+  "height": 9.5,
+  "flat": false
+ },
+ "18969": {
+  "length": 4.0,
+  "width": 3.5,
+  "height": 32.2,
+  "flat": false
+ },
+ "19159": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 7.3,
+  "flat": false
+ },
+ "21229": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "22390": {
+  "length": 8.0,
+  "width": 6.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "22391": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "22484": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "22888": {
+  "length": 8.0,
+  "width": 4.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "22889": {
+  "length": 6.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "22890": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "22961": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "23969": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "24014": {
+  "length": 3.5,
+  "width": 1.0,
+  "height": 4.2,
+  "flat": false
+ },
+ "24122": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "2419": {
+  "length": 6.0,
+  "width": 3.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "2429": {
+  "length": 2.5,
+  "width": 1.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "2430": {
+  "length": 2.5,
+  "width": 1.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "24316": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "2436": {
+  "length": 4.0,
+  "width": 1.5,
+  "height": 3.0,
+  "flat": false
+ },
+ "24375": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 1.8,
+  "flat": false
+ },
+ "2441": {
+  "length": 7.0,
+  "width": 4.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "24505": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 8.1,
+  "flat": false
+ },
+ "2454": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 15.5,
+  "flat": false
+ },
+ "2460": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "2476a": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 4.0,
+  "flat": false
+ },
+ "2486": {
+  "length": 7.5,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "25893": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "2639": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "27255": {
+  "length": 6.0,
+  "width": 5.5,
+  "height": 3.5,
+  "flat": false
+ },
+ "27262": {
+  "length": 6.0,
+  "width": 4.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "27266": {
+  "length": 3.0,
+  "width": 3.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "2730": {
+  "length": 10.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "2736": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "27940": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "2853": {
+  "length": 2.0,
+  "width": 1.5,
+  "height": 2.2,
+  "flat": false
+ },
+ "2854": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "2904": {
+  "length": 5.5,
+  "width": 2.0,
+  "height": 5.8,
+  "flat": false
+ },
+ "2921": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "2926": {
+  "length": 5.5,
+  "width": 1.0,
+  "height": 1.7,
+  "flat": false
+ },
+ "30000": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "30044": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 8.5,
+  "flat": false
+ },
+ "30046": {
+  "length": 1.5,
+  "width": 0.0,
+  "height": 6.6,
+  "flat": false
+ },
+ "30099": {
+  "length": 5.0,
+  "width": 1.0,
+  "height": 12.5,
+  "flat": false
+ },
+ "30157": {
+  "length": 6.0,
+  "width": 2.0,
+  "height": 2.8,
+  "flat": false
+ },
+ "30165": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "30237": {
+  "length": 2.0,
+  "width": 1.5,
+  "height": 3.5,
+  "flat": false
+ },
+ "3028": {
+  "length": 12.0,
+  "width": 6.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "30361a": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "30363": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "30367c": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3038": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "30387": {
+  "length": 5.5,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3040": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "30413": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "30552": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.3,
+  "flat": false
+ },
+ "30553": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "3062": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3185": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 6.0,
+  "flat": false
+ },
+ "32014": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 4.9,
+  "flat": false
+ },
+ "32015": {
+  "length": 2.5,
+  "width": 1.0,
+  "height": 5.0,
+  "flat": false
+ },
+ "32017": {
+  "length": 5.0,
+  "width": 1.0,
+  "height": 1.2,
+  "flat": true
+ },
+ "32056": {
+  "length": 3.0,
+  "width": 3.0,
+  "height": 1.2,
+  "flat": true
+ },
+ "32059": {
+  "length": 6.0,
+  "width": 4.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "32064": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "32123": {
+  "length": 1.0,
+  "width": 0.5,
+  "height": 2.2,
+  "flat": false
+ },
+ "32124": {
+  "length": 5.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "32126": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "32187": {
+  "length": 1.5,
+  "width": 1.5,
+  "height": 4.2,
+  "flat": false
+ },
+ "32192": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 4.5,
+  "flat": false
+ },
+ "32198": {
+  "length": 2.5,
+  "width": 0.5,
+  "height": 6.5,
+  "flat": false
+ },
+ "32250": {
+  "length": 5.0,
+  "width": 3.0,
+  "height": 1.2,
+  "flat": true
+ },
+ "32291": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 4.8,
+  "flat": false
+ },
+ "32348": {
+  "length": 5.5,
+  "width": 3.5,
+  "height": 2.5,
+  "flat": false
+ },
+ "3245b": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "32529": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 5.0,
+  "flat": false
+ },
+ "32530": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 4.9,
+  "flat": false
+ },
+ "32557": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 7.2,
+  "flat": false
+ },
+ "32932": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "33299b": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 5.0,
+  "flat": false
+ },
+ "35044": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "21849": {
+  "length": 9.0,
+  "width": 4.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "4176": {
+  "length": 6.0,
+  "width": 2.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "3639": {
+  "length": 5.0,
+  "width": 2.0,
+  "height": 5.0,
+  "flat": false
+ },
+ "3640": {
+  "length": 5.5,
+  "width": 2.0,
+  "height": 5.0,
+  "flat": false
+ },
+ "3676": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3679": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "3680": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "3937": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.8,
+  "flat": false
+ },
+ "3942c": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "3957": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 12.0,
+  "flat": false
+ },
+ "3960": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "39739": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 1.0,
+  "flat": true
+ },
+ "4073": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "4083": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "4085": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "40902": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "41530": {
+  "length": 4.5,
+  "width": 1.0,
+  "height": 11.5,
+  "flat": false
+ },
+ "41532": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "41678": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "41747": {
+  "length": 6.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "41748": {
+  "length": 6.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "41768": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "42022": {
+  "length": 6.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "42023": {
+  "length": 6.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "4218": {
+  "length": 8.5,
+  "width": 0.5,
+  "height": 3.5,
+  "flat": false
+ },
+ "42446": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 3.4,
+  "flat": false
+ },
+ "4285b": {
+  "length": 6.0,
+  "width": 6.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "4287b": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "43708": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "43712": {
+  "length": 6.0,
+  "width": 4.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "43713": {
+  "length": 6.0,
+  "width": 4.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "43719": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "43898": {
+  "length": 3.0,
+  "width": 3.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "44126": {
+  "length": 6.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "44375b": {
+  "length": 6.0,
+  "width": 6.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "44568": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 1.7,
+  "flat": false
+ },
+ "44809": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "4488": {
+  "length": 2.5,
+  "width": 2.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "4490": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "4510": {
+  "length": 8.0,
+  "width": 1.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "45590": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.3,
+  "flat": false
+ },
+ "45677": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "4599b": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "4600": {
+  "length": 3.5,
+  "width": 2.0,
+  "height": 1.7,
+  "flat": false
+ },
+ "4727": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "47397": {
+  "length": 12.0,
+  "width": 3.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "47398": {
+  "length": 12.0,
+  "width": 3.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "4742": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 6.0,
+  "flat": false
+ },
+ "47456": {
+  "length": 3.5,
+  "width": 2.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "47753": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "47755": {
+  "length": 4.0,
+  "width": 3.0,
+  "height": 4.0,
+  "flat": false
+ },
+ "47905": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "48092": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "48169": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "48170": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 4.2,
+  "flat": false
+ },
+ "48171": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 4.2,
+  "flat": false
+ },
+ "4865": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "4871": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "48723": {
+  "length": 3.0,
+  "width": 3.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "48729": {
+  "length": 1.0,
+  "width": 0.5,
+  "height": 4.8,
+  "flat": false
+ },
+ "48933": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "48989": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 7.2,
+  "flat": false
+ },
+ "50304": {
+  "length": 8.0,
+  "width": 3.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "50305": {
+  "length": 8.0,
+  "width": 3.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "50373": {
+  "length": 4.0,
+  "width": 3.5,
+  "height": 3.5,
+  "flat": false
+ },
+ "52031": {
+  "length": 6.0,
+  "width": 4.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "52501": {
+  "length": 6.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "54383": {
+  "length": 6.0,
+  "width": 3.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "54384": {
+  "length": 6.0,
+  "width": 3.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "54657": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "55013": {
+  "length": 8.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "57519": {
+  "length": 5.0,
+  "width": 2.0,
+  "height": 12.6,
+  "flat": false
+ },
+ "57520": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 7.9,
+  "flat": false
+ },
+ "57585": {
+  "length": 3.0,
+  "width": 2.5,
+  "height": 2.5,
+  "flat": false
+ },
+ "57697": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "57895": {
+  "length": 3.5,
+  "width": 0.0,
+  "height": 16.7,
+  "flat": false
+ },
+ "57909": {
+  "length": 3.5,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "58090": {
+  "length": 4.0,
+  "width": 1.5,
+  "height": 9.5,
+  "flat": false
+ },
+ "58176": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "59426": {
+  "length": 5.5,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "60032": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "6014": {
+  "length": 1.5,
+  "width": 1.5,
+  "height": 3.3,
+  "flat": false
+ },
+ "6020": {
+  "length": 7.5,
+  "width": 3.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "60470": {
+  "length": 2.0,
+  "width": 1.5,
+  "height": 2.0,
+  "flat": false
+ },
+ "60471": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "60476": {
+  "length": 1.5,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "60477": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "60484": {
+  "length": 3.0,
+  "width": 3.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "60581": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 9.5,
+  "flat": false
+ },
+ "60594": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 9.5,
+  "flat": false
+ },
+ "60598": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 9.5,
+  "flat": false
+ },
+ "60599": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 18.5,
+  "flat": false
+ },
+ "6060": {
+  "length": 6.0,
+  "width": 1.0,
+  "height": 10.0,
+  "flat": false
+ },
+ "60607": {
+  "length": 2.0,
+  "width": 0.5,
+  "height": 7.8,
+  "flat": false
+ },
+ "60608": {
+  "length": 2.0,
+  "width": 0.5,
+  "height": 7.8,
+  "flat": false
+ },
+ "60616a": {
+  "length": 3.5,
+  "width": 1.0,
+  "height": 16.7,
+  "flat": false
+ },
+ "60616b": {
+  "length": 3.5,
+  "width": 1.0,
+  "height": 16.7,
+  "flat": false
+ },
+ "60621": {
+  "length": 3.5,
+  "width": 1.0,
+  "height": 16.8,
+  "flat": false
+ },
+ "60623": {
+  "length": 3.5,
+  "width": 0.5,
+  "height": 16.8,
+  "flat": false
+ },
+ "6081": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 4.0,
+  "flat": false
+ },
+ "61070": {
+  "length": 5.5,
+  "width": 3.5,
+  "height": 9.8,
+  "flat": false
+ },
+ "61071": {
+  "length": 5.5,
+  "width": 3.5,
+  "height": 9.8,
+  "flat": false
+ },
+ "6134": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "61485": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "6157": {
+  "length": 4.5,
+  "width": 2.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "61678": {
+  "length": 4.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "61903": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.2,
+  "flat": false
+ },
+ "6215": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "6222": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "6232": {
+  "length": 3.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "6233": {
+  "length": 3.0,
+  "width": 3.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "63869": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 4.8,
+  "flat": false
+ },
+ "64225": {
+  "length": 4.0,
+  "width": 3.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "64288": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "64391": {
+  "length": 7.0,
+  "width": 2.0,
+  "height": 7.4,
+  "flat": false
+ },
+ "64393": {
+  "length": 11.0,
+  "width": 2.0,
+  "height": 7.4,
+  "flat": false
+ },
+ "64644": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 5.5,
+  "flat": false
+ },
+ "64681": {
+  "length": 11.0,
+  "width": 2.0,
+  "height": 7.4,
+  "flat": false
+ },
+ "64683": {
+  "length": 7.0,
+  "width": 2.0,
+  "height": 7.4,
+  "flat": false
+ },
+ "64712": {
+  "length": 8.0,
+  "width": 4.0,
+  "height": 19.3,
+  "flat": false
+ },
+ "6553": {
+  "length": 1.0,
+  "width": 1.0,
+  "height": 7.3,
+  "flat": false
+ },
+ "6628": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "72454": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "73983": {
+  "length": 4.0,
+  "width": 1.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "74261": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.3,
+  "flat": false
+ },
+ "84954": {
+  "length": 4.0,
+  "width": 3.0,
+  "height": 9.5,
+  "flat": false
+ },
+ "85943": {
+  "length": 2.5,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "87081": {
+  "length": 4.0,
+  "width": 4.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "87082": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "87544": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 9.5,
+  "flat": false
+ },
+ "87609": {
+  "length": 6.0,
+  "width": 2.0,
+  "height": 2.5,
+  "flat": false
+ },
+ "87697": {
+  "length": 2.5,
+  "width": 1.5,
+  "height": 6.2,
+  "flat": false
+ },
+ "88292": {
+  "length": 3.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "88646": {
+  "length": 4.0,
+  "width": 3.0,
+  "height": 1.5,
+  "flat": true
+ },
+ "88930": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 2.0,
+  "flat": false
+ },
+ "90195": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "90202": {
+  "length": 2.5,
+  "width": 2.5,
+  "height": 2.5,
+  "flat": false
+ },
+ "90609": {
+  "length": 5.0,
+  "width": 2.0,
+  "height": 3.2,
+  "flat": false
+ },
+ "90611": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 3.2,
+  "flat": false
+ },
+ "90630": {
+  "length": 3.5,
+  "width": 3.0,
+  "height": 3.2,
+  "flat": false
+ },
+ "92013": {
+  "length": 3.5,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "92092": {
+  "length": 4.0,
+  "width": 2.5,
+  "height": 2.0,
+  "flat": false
+ },
+ "92579": {
+  "length": 9.0,
+  "width": 4.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "92582": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 2.4,
+  "flat": false
+ },
+ "92583": {
+  "length": 6.0,
+  "width": 3.0,
+  "height": 6.5,
+  "flat": false
+ },
+ "92589": {
+  "length": 3.5,
+  "width": 0.5,
+  "height": 16.8,
+  "flat": false
+ },
+ "92907": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 4.8,
+  "flat": false
+ },
+ "92946": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "92950": {
+  "length": 6.0,
+  "width": 1.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "93606": {
+  "length": 4.0,
+  "width": 2.0,
+  "height": 3.0,
+  "flat": false
+ },
+ "94161": {
+  "length": 1.5,
+  "width": 0.0,
+  "height": 6.6,
+  "flat": false
+ },
+ "98100": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "98262": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 3.5,
+  "flat": false
+ },
+ "3684": {
+  "length": 2.0,
+  "width": 2.0,
+  "height": 9.5,
+  "flat": false
+ },
+ "99008": {
+  "length": 4.0,
+  "width": 0.5,
+  "height": 1.5,
+  "flat": true
+ },
+ "99021": {
+  "length": 2.0,
+  "width": 1.0,
+  "height": 4.4,
+  "flat": false
+ },
+ "99773": {
+  "length": 5.0,
+  "width": 3.0,
+  "height": 1.2,
+  "flat": true
+ }
+}

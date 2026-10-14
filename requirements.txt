@@ -1,0 +1,5 @@
+mujoco>=3.2,<4
+numpy
+pillow
+torch>=2.6
+torchvision
