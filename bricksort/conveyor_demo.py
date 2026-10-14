@@ -290,9 +290,12 @@ class ConveyorDemo(tk.Tk):
         t = self.bin_table
         t.delete(*t.get_children())
         for i, b in enumerate(self.bins):
-            rule = next((x["when"] for x in self.rules["bins"] if x["name"] == b), None)
+            bin_ = next((x for x in self.rules["bins"] if x["name"] == b), None)
+            rule = bin_["when"] if bin_ else None
             if rule is not None:
                 desc = rules_mod.describe(rule)
+                if "confidence" in bin_:
+                    desc += f" (needs {bin_['confidence']:.0%})"
             elif b == self.rules["not_lego_bin"]:
                 desc = "things that aren't LEGO"
             else:

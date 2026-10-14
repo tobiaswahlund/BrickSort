@@ -117,17 +117,24 @@ def uses_color(when):
     return "color" in when
 
 
+def bin_need(rules, b):
+    """How sure the model must be for this bin: its own "confidence", or the general one."""
+    return b.get("confidence", rules["confidence_needed"])
+
+
 def _by_category(rules, category, category_conf, color_name, color_conf):
     """Part number unsure, but the category is clear: only bins that ask for just a category
     (and maybe a colour) can be used, e.g. all minifig accessories in one bin."""
-    need = rules["confidence_needed"]
-    if not category or category_conf < need:
+    if not category:
         return None
     for b in rules["bins"]:
         when = b["when"]
+        need = bin_need(rules, b)
         if "category" not in when or set(when) - {"category", "color"}:
             continue
         if not any(t in category.lower() for t in _texts(when["category"])):
+            continue
+        if category_conf < need:
             continue
         if "color" in when:
             if color_conf < need:
@@ -150,15 +157,23 @@ def choose_bin(rules, props, part_id, part_conf, color_name, color_conf, n_objec
         if part_conf >= need:
             return rules["not_lego_bin"], f"not a Lego piece ({part_conf:.0%} sure)"
         return rules["rest_bin"], f"probably not Lego, but only {part_conf:.0%} sure"
-    if part_conf < need:
+    # a bin may ask for less than the general level, so the part check uses the lowest of them
+    lowest = min([need] + [bin_need(rules, b) for b in rules["bins"]])
+    if part_conf < lowest:
         by_cat = _by_category(rules, category, category_conf, color_name, color_conf)
         if by_cat:
             return by_cat
-        return rules["rest_bin"], f"only {part_conf:.0%} sure it's {part_id} (needs {need:.0%})"
+        return rules["rest_bin"], f"only {part_conf:.0%} sure it's {part_id} (needs {lowest:.0%})"
     for b in rules["bins"]:
         shape_rules = {k: v for k, v in b["when"].items() if k not in ("color", "printed")}
         if not matches(shape_rules, part_id, color_name, props):
             continue
+        need = bin_need(rules, b)
+        if uses_color(b["when"]) and not matches({"color": b["when"]["color"]}, part_id, color_name, props) \
+                and color_conf >= min(need, rules["confidence_needed"]):
+            continue   # clearly another colour: this bin is out, whatever it asks for
+        if part_conf < need:   # it would go here, but this bin asks for more: set it aside, don't guess
+            return rules["rest_bin"], f"only {part_conf:.0%} sure it's {part_id} ('{b['name']}' needs {need:.0%})"
         if "printed" in b["when"]:
             # same idea as colour: unsure whether there's a print -> rest bin, not a wrong bin
             if printed is None or need > max(printed, 1 - printed):
