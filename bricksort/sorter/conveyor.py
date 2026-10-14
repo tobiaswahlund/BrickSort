@@ -17,7 +17,7 @@ from . import hardware
 MM_PER_UNIT = 100.0
 BELT_HALF_LEN, BELT_HALF_WIDTH = 2.0, 0.75   # wide enough for big plates (a 2x16 plate is 128 mm)
 CAM_RES, CAM_H, FOVY = 720, 2.1, 45.0        # camera high enough to see the whole belt width
-OVERVIEW = (640, 360)
+OVERVIEW = (960, 540)   # rendered this big so it still looks sharp in a maximised window
 POOL = 40                 # different pieces in the world at once (38 Lego + 2 non-Lego)...
 REFRESH_AFTER = 60        # ...swapped for a new random set after this many pieces, so it keeps changing
 MAX_PIECE = 1.4           # longest piece (units) that fits on the belt

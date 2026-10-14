@@ -17,7 +17,7 @@ from . import catalog, config
 from .demo import reference_image
 from .viewer import PartViewer
 from .ldraw import Library
-from .ui import Label, make_copyable
+from .ui import ImageBox, Label, make_copyable
 from .sorter import properties, rules as rules_mod
 from .sorter.piece_picker import PiecePicker, load_choice
 from .sorter.conveyor import (BELTS, DEFAULT_BELT, SPAWN_ALL, SPAWN_CHOSEN, SPAWN_TRAINED, ConveyorWorld, NoPieces,
@@ -107,19 +107,22 @@ class ConveyorDemo(tk.Tk):
         ttk.Button(bar, text="Edit bins…", command=self.edit_bins).pack(side="right")
 
         # ---- left: the machine, the camera and the last piece
+        # (the machine and camera pictures grow and shrink with the window)
         left = ttk.Frame(self)
-        left.grid(row=1, column=0, sticky="nw")
+        left.grid(row=1, column=0, sticky="nsew")
         over = ttk.LabelFrame(left, text="Machine")
-        over.grid(row=0, column=0, columnspan=2, sticky="we")
-        self.overview = Label(over)
-        self.overview.pack(**pad)
+        over.grid(row=0, column=0, columnspan=2, sticky="nsew")
+        self.overview = ImageBox(over, 640, 360)
+        self.overview.pack(fill="both", expand=True, **pad)
         cam_box = ttk.LabelFrame(left, text="Camera (red box = piece found)")
-        cam_box.grid(row=1, column=0, sticky="nw", pady=(8, 0))
-        self.cam_view = Label(cam_box)
-        self.cam_view.pack(**pad)
+        cam_box.grid(row=1, column=0, sticky="nsew", pady=(8, 0))
+        self.cam_view = ImageBox(cam_box, 300, 300)
+        self.cam_view.pack(fill="both", expand=True, **pad)
         last = ttk.LabelFrame(left, text="Last piece")
         last.grid(row=1, column=1, sticky="nsew", padx=(8, 0), pady=(8, 0))
-        left.columnconfigure(1, weight=1)
+        left.columnconfigure(0, weight=1)
+        left.rowconfigure(0, weight=3)
+        left.rowconfigure(1, weight=2)
         pics = ttk.Frame(last)
         pics.pack(anchor="w", **pad)
         ttk.Label(pics, text="Photo").grid(row=0, column=0, sticky="w")
@@ -186,7 +189,7 @@ class ConveyorDemo(tk.Tk):
         self.bin_table.pack(fill="x", **pad)
 
         results = ttk.LabelFrame(right, text="Results")
-        results.pack(fill="x", pady=(8, 0))
+        results.pack(fill="both", expand=True, pady=(8, 0))
         self.score_text = Label(results, text="No pieces sorted yet.", wraplength=340, justify="left")
         self.score_text.pack(anchor="w", padx=8, pady=(6, 4))
         ttk.Label(results, text="Recognition (checked against the real piece):").pack(anchor="w", padx=8)
@@ -197,8 +200,9 @@ class ConveyorDemo(tk.Tk):
         bottom = ttk.LabelFrame(self, text="Log")
         bottom.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=(8, 0))
         self.columnconfigure(0, weight=1)
-        self.rowconfigure(2, weight=1)
-        self.log = tk.Text(bottom, height=8, width=120, state="disabled", font=("Consolas", 9), wrap="word",
+        self.rowconfigure(1, weight=4)   # extra height mostly goes to the pictures...
+        self.rowconfigure(2, weight=1)   # ...and some to the log
+        self.log = tk.Text(bottom, height=7, width=60, state="disabled", font=("Consolas", 9), wrap="word",
                            relief="flat")
         make_copyable(self.log)  # select + Ctrl+C, or right-click > Copy
         log_scroll = ttk.Scrollbar(bottom, orient="vertical", command=self.log.yview)
@@ -451,7 +455,7 @@ class ConveyorDemo(tk.Tk):
     def _draw(self):
         self.tick_no += 1
         if self.tick_no % 2 == 0 or not self.running:
-            self._set(self.overview, tkimg(self.world.render("overview"), 640, 360))
+            self.overview.set(self.world.render("overview"))
         frame = getattr(self, "cam_frame", None)
         if frame is None:
             frame = self.camera.frame()
@@ -461,7 +465,7 @@ class ConveyorDemo(tk.Tk):
         draw.line([(w / 2, 0), (w / 2, img.height)], fill=(255, 255, 255), width=1)
         for b in getattr(self, "blobs", []):
             draw.rectangle([b.x0, b.y0, b.x1, b.y1], outline=(255, 40, 40), width=2)
-        self._set(self.cam_view, tkimg(img, 300))
+        self.cam_view.set(img)
 
 
 def run():

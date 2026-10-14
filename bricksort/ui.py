@@ -8,6 +8,49 @@ import math
 import tkinter as tk
 from tkinter import font as tkfont, ttk
 
+from PIL import Image, ImageTk
+
+HEADING = ("Segoe UI", 10, "bold")
+MUTED = "#666"
+
+
+class ImageBox(ttk.Frame):
+    """Shows a picture as large as the space it gets, keeping its shape: give it room with
+    grid(sticky="nsew") and a weight, and it grows and shrinks with the window.
+    width/height: the size it asks for at first (and the smallest it is laid out at)."""
+
+    def __init__(self, master, width, height, background=None):
+        super().__init__(master, width=width, height=height)
+        self.label = tk.Label(self, bd=0, bg=background or ttk.Style(master).lookup("TFrame", "background"))
+        # place() doesn't make the frame ask for the picture's size, so a big picture can't push
+        # the window larger: the frame's size alone decides how big the picture is drawn
+        self.label.place(relx=0.5, rely=0.5, anchor="center")
+        self._img, self._shown_size, self._photo = None, None, None
+        self.bind("<Configure>", lambda e: self._render())
+
+    def set(self, img):
+        """img: a PIL image or a numpy array (H, W, 3)."""
+        self._img = img if isinstance(img, Image.Image) else Image.fromarray(img)
+        self._render(force=True)
+
+    def _render(self, force=False):
+        if self._img is None:
+            return
+        w, h = self.winfo_width(), self.winfo_height()
+        if w < 10 or h < 10:   # not laid out yet: use the size it asked for
+            w, h = int(self.cget("width")), int(self.cget("height"))
+        k = min(w / self._img.width, h / self._img.height)
+        size = (max(1, int(self._img.width * k)), max(1, int(self._img.height * k)))
+        if not force and size == self._shown_size:
+            return
+        self._shown_size = size
+        self._photo = ImageTk.PhotoImage(self._img.resize(size, Image.BILINEAR))
+        self.label.configure(image=self._photo)
+
+    def bind_image(self, sequence, func):
+        """Mouse events on the picture itself (e.g. clicks)."""
+        self.label.bind(sequence, func)
+
 
 def make_copyable(text_widget):
     """For read-only log boxes: clicking gives focus (so Ctrl+C works) and right-click offers Copy."""
