@@ -13,10 +13,12 @@ Pieces with a print: give them the colour of the plastic and press "Marked ones 
 they go to my_photos/<part>/<colour>/printed/.
 You can go back and forth between pieces at any time; all choices are saved.
 """
+import copy
 import json
 import random
 import shutil
 import tkinter as tk
+from pathlib import Path
 from tkinter import messagebox, ttk
 
 from PIL import Image, ImageTk
@@ -81,6 +83,9 @@ class ColourReview(tk.Tk):
         wide_dropdown(self.jump)
         self.progress = Label(top, text="", foreground="#666")
         self.progress.pack(side="left", padx=8)
+        self.undo_btn = ttk.Button(top, text="↶ Undo", command=self.undo, state="disabled")
+        self.undo_btn.pack(side="right")
+        self.bind_all("<Control-z>", lambda e: self.undo())
         self.title_lbl = Label(self, text="", font=("Segoe UI", 13, "bold"))
         self.title_lbl.pack(anchor="w", pady=(6, 0))
         self.help = Label(self, text="", wraplength=1100, justify="left")
@@ -95,6 +100,8 @@ class ColourReview(tk.Tk):
         self.canvas.configure(yscrollcommand=sb.set)
         self.canvas.pack(side="left", fill="both", expand=True)
         sb.pack(side="right", fill="y")
+        self.cols = COLS
+        self.canvas.bind("<Configure>", lambda e: self._reflow())   # as many photos per row as fit
         self.bind_all("<MouseWheel>", lambda e: self.canvas.yview_scroll(int(-e.delta / 120), "units"))
         self.bottom = ttk.Frame(self)
         self.bottom.pack(fill="x", pady=(8, 0))
@@ -106,6 +113,8 @@ class ColourReview(tk.Tk):
     def _thumb(self, path):
         key = str(path)
         if key not in self.thumbs:
+            if len(self.thumbs) > 3000:   # never keep thousands of pictures in memory (it used to crash)
+                self.thumbs.clear()
             img = Image.open(path).convert("RGB")
             img.thumbnail((THUMB, THUMB))
             self.thumbs[key] = ImageTk.PhotoImage(img)
@@ -123,7 +132,7 @@ class ColourReview(tk.Tk):
         self.caption_lbls = {}
         for k, f in enumerate(files):
             cell = tk.Frame(self.grid_frame, bg="#f4f4f4", highlightthickness=4, highlightbackground="#f4f4f4")
-            cell.grid(row=k // COLS, column=k % COLS, padx=2, pady=2)
+            cell.grid(row=k // self.cols, column=k % self.cols, padx=2, pady=2)
             pic = tk.Label(cell, image=self._thumb(self.paths()[f]), bg="#f4f4f4",
                            cursor="hand2" if selectable else "")
             pic.pack()
@@ -135,6 +144,46 @@ class ColourReview(tk.Tk):
                     w.bind("<Shift-Button-1>", lambda e, f=f: self._shift_click(f))
             self.cells[f] = cell
 
+    def _reflow(self):
+        """Window resized: lay the photos out again with as many per row as now fit."""
+        cols = max(1, (self.canvas.winfo_width() - 8) // (THUMB + 18))   # photo + frame + gap
+        if cols == self.cols:
+            return
+        self.cols = cols
+        for k, f in enumerate(getattr(self, "order", [])):
+            if f in self.cells and self.cells[f].winfo_exists():
+                self.cells[f].grid(row=k // cols, column=k % cols)
+
+    # ------------------------------------------------------------------ undo
+    def _remember(self):
+        """Call before changing anything: keeps this piece's state so Undo can bring it back."""
+        part = self.parts[self.i]
+        self.undo_stack = getattr(self, "undo_stack", [])[-49:]   # the last 50 steps
+        self.undo_stack.append((self.i, copy.deepcopy(self.state.get(part))))
+        self.undo_btn.configure(state="normal")
+
+    def undo(self):
+        """Go back one step: the piece's choices as they were, and any photos that were moved
+        (to my_photos, or to the deleted folder) put back where they were."""
+        if not getattr(self, "undo_stack", None):
+            return
+        i, old = self.undo_stack.pop()
+        part = self.parts[i]
+        now = self.state.get(part) or {}
+        for f, was in (old or {}).get("path", {}).items():
+            where = now.get("path", {}).get(f) or str(DELETED / part / f)
+            if where != was and Path(where).exists():
+                Path(was).parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(where, was)
+        if old is None:
+            self.state.pop(part, None)
+        else:
+            self.state[part] = old
+        self.save()
+        if not self.undo_stack:
+            self.undo_btn.configure(state="disabled")
+        self.show_part(i)
+
     def _caption(self, f):
         text = self.captions.get(f, "")
         if f in self.part_state().get("printed", []):
@@ -143,6 +192,7 @@ class ColourReview(tk.Tk):
 
     def set_printed(self, on):
         """Flag the marked photos as printed (or not). They still get the colour of the plastic."""
+        self._remember()
         st = self.part_state()
         printed = set(st.get("printed", []))
         printed = printed | self.marked if on else printed - self.marked
@@ -165,6 +215,7 @@ class ColourReview(tk.Tk):
         """Throw the marked photos away: moved to _check/_deleted/<part>/ (so a mistake can be undone)."""
         if not self.marked:
             return
+        self._remember()
         st = self.part_state()
         bin_dir = DELETED / self.parts[self.i]
         bin_dir.mkdir(parents=True, exist_ok=True)
@@ -270,7 +321,14 @@ class ColourReview(tk.Tk):
         if not self.parts:
             return
         self.save()
-        self.i = max(0, min(i, len(self.parts) - 1))
+        new = max(0, min(i, len(self.parts) - 1))
+        if new != getattr(self, "i", None):
+            # a new piece: forget the previous piece's thumbnails. They used to pile up for every
+            # piece looked at, until the program ran out of memory after a long session
+            for w in self.grid_frame.winfo_children():
+                w.destroy()
+            self.thumbs.clear()
+        self.i = new
         part = self.parts[self.i]
         st = self.part_state()
         done = sum(1 for p in self.parts if self.state.get(p, {}).get("stage") == "done")
@@ -338,6 +396,7 @@ class ColourReview(tk.Tk):
                       highlightthickness=3 if on else 0, highlightbackground="#1a73e8", bd=5 if on else 3)
 
     def _press(self, name):
+        self._remember()
         sel = self.part_state()["selected"]
         if name in sel:
             sel.remove(name)
@@ -347,6 +406,7 @@ class ColourReview(tk.Tk):
         self.save()
 
     def finish_pick(self):
+        self._remember()
         st = self.part_state()
         if not st["selected"]:
             messagebox.showinfo("No colours", "Press at least one colour you can see.", parent=self)
@@ -396,6 +456,7 @@ class ColourReview(tk.Tk):
         if name not in self.rgb:
             messagebox.showinfo("Colour", f"'{name}' isn't one of the colour names.", parent=self)
             return
+        self._remember()
         if done_stage:  # finished piece: look through all its photos for the new colour
             st["recheck"] = name
             st["stage"] = "assign"
@@ -466,6 +527,7 @@ class ColourReview(tk.Tk):
         self._printed_buttons(row2)
 
     def answer(self, marked_are):
+        self._remember()
         st = self.part_state()
         colour, shown = self.current
         yes = [f for f in shown if (f in self.marked) == marked_are]
@@ -486,12 +548,14 @@ class ColourReview(tk.Tk):
         self.stage_assign()
 
     def rest_unknown(self):
+        self._remember()
         st = self.part_state()
         for f in self._unassigned():
             st["colour"][f] = NOT_SPECIFIED
         self.finish_part()
 
     def back_to_pick(self):
+        self._remember()
         st = self.part_state()
         st.update(stage="pick", colour={}, finished=[], cand=dict(st.get("orig_cand", st["cand"])))
         self.save()
@@ -539,8 +603,15 @@ class ColourReview(tk.Tk):
         ttk.Button(self.bottom, text="Next piece ▶", command=lambda: self.show_part(self.i + 1)).pack(side="right")
 
 
-if __name__ == "__main__":
+def run():
     app = ColourReview()
-    if app.winfo_exists():
-        app.protocol("WM_DELETE_WINDOW", lambda: (app.save(), app.destroy()))
-        app.mainloop()
+    try:
+        if app.winfo_exists():
+            app.protocol("WM_DELETE_WINDOW", lambda: (app.save(), app.destroy()))
+            app.mainloop()
+    except tk.TclError:   # closed straight away (nothing to check)
+        pass
+
+
+if __name__ == "__main__":
+    run()
