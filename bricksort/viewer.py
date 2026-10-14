@@ -83,13 +83,24 @@ class PartViewer(tk.Label):
         self.last = (e.x, e.y)
         self.cam.azimuth -= dx * 0.8
         self.cam.elevation = float(np.clip(self.cam.elevation - dy * 0.8, -89, 89))
-        self.render()
+        self.render_soon()
 
     def _zoom(self, e):
         self.cam.distance = float(np.clip(self.cam.distance * (0.9 if e.delta > 0 else 1.1),
                                           self.radius * 1.2, self.radius * 8))
-        self.render()
+        self.render_soon()
         return "break"
+
+    def render_soon(self):
+        """Draw once the waiting mouse moves are handled (see LookPreview.render_soon)."""
+        if not getattr(self, "_pending", False):
+            self._pending = True
+            self.after_idle(self._render_now)
+
+    def _render_now(self):
+        self._pending = False
+        if self.renderer is not None:
+            self.render()
 
     def _close(self, e):
         if e.widget is self and self.renderer is not None:
@@ -164,11 +175,22 @@ class LookPreview(tk.Label):
         self.last = (e.x, e.y)
         self.cam.azimuth -= dx * 0.8
         self.cam.elevation = float(np.clip(self.cam.elevation - dy * 0.8, -89, -5))   # stay above the belt
-        self.render()
+        self.render_soon()
 
     def _zoom(self, e):
         if self.scene:
             r = self.scene.radius
             self.cam.distance = float(np.clip(self.cam.distance * (0.9 if e.delta > 0 else 1.1), r * 1.5, r * 12))
-            self.render()
+            self.render_soon()
         return "break"
+
+    def render_soon(self):
+        """Draw once the waiting mouse moves are handled. A mouse reports hundreds of moves a second;
+        drawing after each one (13 ms each) made them pile up, so the piece trailed behind the mouse."""
+        if not getattr(self, "_pending", False):
+            self._pending = True
+            self.after_idle(self._render_now)
+
+    def _render_now(self):
+        self._pending = False
+        self.render()
