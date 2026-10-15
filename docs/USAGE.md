@@ -71,6 +71,24 @@ Double-click **Model training.bat**.
 - **Training pictures (right side):** the pictures being made now, or all of them, to check they look
   right. Click one to see it big; a bad one can be taken out, and a new one is made next time.
 
+## The honest accuracy test
+
+The scores the training prints come from photos taken in the same sessions as its training photos, so
+they're optimistic. The real test uses pieces the model has never seen:
+
+1. Draw about 150 pieces at random from a mixed tub (no choosing; pieces the model doesn't know are kept,
+   they show how much of a real collection it covers).
+2. Photograph them on a plain surface from above, several apart per photo, with the camera a sorting
+   machine would use. Put the photos in `my_photos/_to_cut_test/`.
+3. **Cut out test pieces.bat**: like Cut out pieces, but the model's guesses are hidden, so your answers
+   can't lean towards them. The pieces go to `my_photos/_test/<part>/<colour>/`, which training never uses.
+4. **Test accuracy.bat** (or `python -m bricksort.evaluate`) scores the model: first guess, top 5 and
+   colour on the parts it knows, the category on the parts it doesn't, each with a 95% range, and the
+   most-confused parts. It writes `results/RESULTS.md`.
+
+Never correct test pieces in the demo: corrections are used for training. One photo per piece; several
+photos of one piece can share a name start with two underscores (`piece07__a.jpg`, `piece07__b.jpg`).
+
 ## Where things are
 
 | What | Where |

@@ -14,6 +14,7 @@ For each photo the pieces are found automatically and shown with numbered boxes.
   saved when you go to another photo, close the window, or press "Save draft".
 """
 import json
+import sys
 import re
 import time
 import tkinter as tk
@@ -28,6 +29,7 @@ from .ui import Label
 from .sorter.detector import Detector
 
 TO_CUT = config.MY_PHOTOS / "_to_cut"
+TO_CUT_TEST = config.MY_PHOTOS / "_to_cut_test"   # photos for the honest test (python -m bricksort.cut --test)
 VIEW = 760  # longest side of the photo on screen
 
 
@@ -206,9 +208,15 @@ def square_crop(img, box, margin=0.05):
 
 
 class Cutter(tk.Tk):
-    def __init__(self):
+    """test=True: pieces for the honest accuracy test (Phase 4). Photos come from my_photos/_to_cut_test/,
+    the model's guesses are never shown (so the answers can't lean towards them), and pieces are saved in
+    my_photos/_test/<part>/<colour>/, which training never uses."""
+
+    def __init__(self, test=False):
         super().__init__()
-        self.title("BrickSort – cut out pieces")
+        self.test = test
+        self.to_cut = TO_CUT_TEST if test else TO_CUT
+        self.title("BrickSort – cut out TEST pieces (blind: no guesses shown)" if test else "BrickSort – cut out pieces")
         self.configure(padx=10, pady=10)
         parts = catalog.load_parts()
         self.part_ids = [p["id"] for p in parts]  # suggestions; any other number can be typed
@@ -236,7 +244,7 @@ class Cutter(tk.Tk):
         self.color_names = catalog.color_choices()  # most used colours first
         self.color_by_id = {cid: n for cid, (n, _) in colors.items()}
         self.recognizer = None
-        if config.MODEL_FILE.exists():
+        if config.MODEL_FILE.exists() and not test:   # a test is labelled blind: no model at all
             from .model import Recognizer
             self.recognizer = Recognizer()
         self.guesses = {}
@@ -283,7 +291,7 @@ class Cutter(tk.Tk):
 
     # ---------- unfinished work is kept per photo, in _to_cut/progress/ ----------
     def _draft_file(self, path):
-        return TO_CUT / "progress" / (path.name + ".json")
+        return self.to_cut / "progress" / (path.name + ".json")
 
     def save_draft(self):
         """Remember the boxes and what's typed for this photo, to pick up later."""
@@ -300,13 +308,13 @@ class Cutter(tk.Tk):
         self.destroy()
 
     def _photos(self):
-        return [p for p in sorted(TO_CUT.glob("*")) if p.suffix.lower() in config.PHOTO_TYPES]
+        return [p for p in sorted(self.to_cut.glob("*")) if p.suffix.lower() in config.PHOTO_TYPES]
 
     def go(self, step):
         """Show the previous (-1) / next (+1) photo, keeping the progress on this one."""
         photos = self._photos()
         if not photos:
-            messagebox.showinfo("All done", "No more photos in my_photos/_to_cut.")
+            messagebox.showinfo("All done", f"No more photos in my_photos/{self.to_cut.name}.")
             self.destroy()
             return
         if self.path:
@@ -329,7 +337,9 @@ class Cutter(tk.Tk):
             self.fields = []
             how = f"found {len(self.boxes)} pieces"
         self.status.configure(text="")
-        self.info.configure(text=f"{path.name}: {how} ({n_photos} photos in _to_cut).\n"
+        test = ("TEST PIECES: type the part and colour yourself; the model's guesses are hidden on purpose. "
+                "Pieces it doesn't know are fine: keep them.\n") if self.test else ""
+        self.info.configure(text=test + f"{path.name}: {how} ({n_photos} photos in {self.to_cut.name}).\n"
                                  "Drag on the photo to add a missed piece. Drag a box's edge or corner to resize it. "
                                  "Right-click a box to remove it.")
         self._redraw()
@@ -477,7 +487,8 @@ class Cutter(tk.Tk):
         buttons = ttk.Frame(win)
         buttons.grid(row=3, column=1, sticky="w", pady=(8, 0))
         ttk.Button(buttons, text="Use this number", command=use).pack(side="left")
-        ttk.Button(buttons, text="Make it a custom piece…", command=make_custom).pack(side="left", padx=6)
+        if not self.test:   # a test piece never changes what the model learns
+            ttk.Button(buttons, text="Make it a custom piece…", command=make_custom).pack(side="left", padx=6)
         ttk.Button(buttons, text="Not now", command=win.destroy).pack(side="left")
         entry.focus_set()
         entry.select_range(0, "end")
@@ -605,7 +616,11 @@ class Cutter(tk.Tk):
             colour = col.get().strip()
             if colour == catalog.SEPARATOR:
                 colour = "Unknown"
-            if pid == catalog.MULTIPLE:  # my_photos/_multiple/Stuck or /Not_touching
+            if self.test:   # the honest test: my_photos/_test/<part>/<colour>/ (no colour folder if unknown)
+                folder = config.TEST_DIR / pid
+                if colour and colour not in ("Unknown", *MULTIPLE_KINDS):
+                    folder = folder / colour
+            elif pid == catalog.MULTIPLE:  # my_photos/_multiple/Stuck or /Not_touching
                 folder = config.MY_PHOTOS / "_multiple" / ("Stuck" if colour == "Stuck" else "Not_touching")
             elif colour in ("", "Unknown") and pid not in catalog.SPECIAL and "+" not in part.get():
                 # colour not known yet: into Check colours' folder, where you give it its colour later
@@ -625,7 +640,7 @@ class Cutter(tk.Tk):
             self.save_draft()
             self.status.configure(text=f"Saved {saved} pieces. The rest stay here until you fix their numbers.")
             return
-        done = TO_CUT / "done"
+        done = self.to_cut / "done"
         done.mkdir(exist_ok=True)
         self._draft_file(self.path).unlink(missing_ok=True)
         photos = self._photos()
@@ -634,7 +649,7 @@ class Cutter(tk.Tk):
         self.path = None
         rest = self._photos()
         if not rest:
-            messagebox.showinfo("All done", f"Saved {saved} pieces. No more photos in my_photos/_to_cut.")
+            messagebox.showinfo("All done", f"Saved {saved} pieces. No more photos in my_photos/{self.to_cut.name}.")
             self.destroy()
             return
         self.show(rest[min(i, len(rest) - 1)], len(rest))
@@ -642,7 +657,7 @@ class Cutter(tk.Tk):
 
 
 def run():
-    app = Cutter()
+    app = Cutter(test="--test" in sys.argv)
     try:
         app.mainloop()
     except tk.TclError:   # closed straight away (no photos to cut)

@@ -40,6 +40,8 @@ SORTED_LOG = PROJECT_DIR / "sorted_log"   # pictures of pieces the sorter did so
 SORTED_LOG_MAX = 500                      # keep only the newest this many
 MY_PHOTOS = PROJECT_DIR / "my_photos"     # my_photos/<part>/*.jpg, my_photos/unknown/*.jpg (your own photos)
 PHOTO_TYPES = (".jpg", ".jpeg", ".jfif", ".png", ".bmp", ".webp")
+SIM_PREFIX = "sim_"   # corrections of simulated pictures (demo drops, the virtual sorter): not real photos
+TEST_DIR = MY_PHOTOS / "_test"   # the honest test: never trained on (folders starting with _ are skipped)
 
 # The part lists ship in defaults/ and are copied to the project folder the first time: the app
 # changes the copies as you work (new parts, measurements), so those stay out of git.

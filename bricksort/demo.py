@@ -328,16 +328,16 @@ class Demo(tk.Tk):
                 self._record_spot_check(pred, part_id, color)
 
         def not_lego():
-            self.save_correction(crop, junk.NOT_LEGO)
+            self.save_correction(crop, junk.NOT_LEGO, simulated=True)
             done()
             win.destroy()
 
         def several():
-            self.save_correction(crop, catalog.MULTIPLE)  # teaches "several pieces" -> rest bin
+            self.save_correction(crop, catalog.MULTIPLE, simulated=True)  # teaches "several pieces" -> rest bin
             done()
             win.destroy()
 
-        win = self.review(crop, truth=None, pred=pred, on_saved=done,
+        win = self.review(crop, truth=None, pred=pred, on_saved=done, simulated=True,
                           extra=[("Not LEGO", not_lego), ("Several pieces", several)])
         # answered -> show the next one; "Skip" keeps it for later and stops
         win.bind("<Destroy>", lambda e: e.widget is win and not png.exists()
@@ -355,7 +355,11 @@ class Demo(tk.Tk):
                    f"colour right {s['color_right'] / s['checked']:.0%}.")
 
     # ---------- review window ----------
-    def review(self, crop, truth, source=None, pred=None, on_saved=None, extra=()):
+    def review(self, crop, truth, source=None, pred=None, on_saved=None, extra=(), simulated=None):
+        """simulated: the picture comes from the simulation (a drop, or the virtual sorting machine), so a
+        correction is saved as sim_..., kept apart from real photos (default: True when there's a truth)."""
+        if simulated is None:
+            simulated = truth is not None
         if pred is None and self.recognizer:
             pred = self.recognizer.predict(crop)
         guesses, color_guesses = (pred.parts, pred.colors) if pred else ([], [])
@@ -372,7 +376,7 @@ class Demo(tk.Tk):
                                == catalog.same_colour(self.color_name(cid)))
             self.status.configure(text=f"This session: {t['drops']} drops. Part right on first guess {t['first']}, "
                                        f"within top 5 {t['top5']}. Colour right {t['color']}.")
-        return ReviewWindow(self, crop, guesses, color_guesses, truth, source, on_saved, extra)
+        return ReviewWindow(self, crop, guesses, color_guesses, truth, source, on_saved, extra, simulated)
 
     def color_name(self, cid):
         return self.colors[cid][0] if cid in self.colors else "Unknown"
@@ -405,10 +409,10 @@ class Demo(tk.Tk):
                         "category": first.get("category", ""), "tags": ["combo"]})
             self.reload_parts()
             self.write(f"New combo piece {cid}: from the next retrain it's learned as one piece.")
-        if self.save_correction(crop, cid, color_name):
+        if self.save_correction(crop, cid, color_name, simulated=window.simulated):
             window.finish(cid, color_name)
 
-    def save_correction(self, crop, part_id, color_name="Unknown", source=None):
+    def save_correction(self, crop, part_id, color_name="Unknown", source=None, simulated=False):
         typed = part_id.strip()
         part_id = typed if typed in self.by_id else catalog.folder_part(typed) or typed
         if part_id != typed:
@@ -442,7 +446,8 @@ class Demo(tk.Tk):
             return True
         folder = config.CORRECTIONS.joinpath(part_id, *color_dir)
         folder.mkdir(parents=True, exist_ok=True)
-        crop.save(folder / f"{time.strftime('%Y%m%d-%H%M%S')}.png")
+        prefix = config.SIM_PREFIX if simulated else ""   # simulated pictures are kept apart from real photos
+        crop.save(folder / f"{prefix}{time.strftime('%Y%m%d-%H%M%S')}.png")
         n = sum(1 for _ in config.CORRECTIONS.rglob("*.png"))
         self.write(f"Saved as {part_id}, {color_name}. You have {n} confirmed pictures in total.")
         return True
@@ -487,8 +492,9 @@ class Demo(tk.Tk):
 
 
 class ReviewWindow(tk.Toplevel):
-    def __init__(self, app, crop, guesses, color_guesses, truth, source=None, on_saved=None, extra=()):
+    def __init__(self, app, crop, guesses, color_guesses, truth, source=None, on_saved=None, extra=(), simulated=False):
         super().__init__(app)
+        self.simulated = simulated
         self.app, self.crop, self.source, self.on_saved = app, crop, source, on_saved
         self.title("Check the guess")
         self.configure(padx=12, pady=12)
@@ -575,7 +581,8 @@ class ReviewWindow(tk.Toplevel):
         self.hint.configure(text=part["name"] if part else "")
 
     def choose(self, part_id):
-        if part_id.strip() and self.app.save_correction(self.crop, part_id, self.color.get().strip(), self.source):
+        if part_id.strip() and self.app.save_correction(self.crop, part_id, self.color.get().strip(), self.source,
+                                                        simulated=self.simulated):
             self.finish(part_id.strip(), self.color.get().strip())
 
     def finish(self, part_id, color):

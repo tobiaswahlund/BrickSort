@@ -179,6 +179,12 @@ def collect(parts, log=say):
     if unknown_names:
         log(f"Note: these colour folder names aren't Rebrickable colours, so their colour is ignored: "
             f"{', '.join(sorted(unknown_names))}")
+    # corrections of simulated pictures (demo drops, the virtual sorter) are renders, not real photos:
+    # they train like simulated pictures and never count towards the real-photo test
+    from_sim = [it for it in real if it[0].name.startswith(config.SIM_PREFIX)]
+    if from_sim:
+        real = [it for it in real if not it[0].name.startswith(config.SIM_PREFIX)]
+        sim += from_sim
     return sim, real
 
 
