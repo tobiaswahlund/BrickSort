@@ -2,8 +2,7 @@
 
 Recognises LEGO parts from a camera picture and sorts them on a simulated conveyor belt.
 
-<!-- GIF: a piece dropping in the demo, the guesses appearing, then the belt sorting pieces into bins -->
-*(A short screen recording goes here.)*
+![A piece is dropped in the demo and recognised, then the virtual sorting machine sorts pieces into bins](docs/images/bricksort.gif)
 
 ## What it does
 
@@ -101,5 +100,6 @@ site. BrickSort is an independent project.
 
 ## Licence
 
-The code is MIT-licensed (see [LICENSE](LICENSE)). The datasets and the 3D part library keep their own
-licences, listed above.
+The code is MIT-licensed (see [LICENSE](LICENSE)). The trained model (the Release download) is
+licensed CC BY-SA 4.0, because part of its training data is CC BY-SA 4.0. The datasets and the 3D
+part library keep their own licences, listed above.
