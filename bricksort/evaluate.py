@@ -151,4 +151,5 @@ def markdown(r):
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(errors="replace")   # a Windows console can't show every character
     evaluate(sys.argv[1] if len(sys.argv) > 1 else None)
