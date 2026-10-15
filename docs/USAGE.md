@@ -3,6 +3,8 @@
 All launchers are in `scripts/windows/` (double-click them). Each one also works as a Python
 command, listed at the end.
 
+Pictures of every window, with what each button does: [WINDOWS.md](WINDOWS.md).
+
 ## Setup
 
 Double-click **setup.bat** once. It installs Python 3.12, PyTorch (the graphics-card version if

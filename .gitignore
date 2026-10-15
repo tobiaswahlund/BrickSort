@@ -9,7 +9,7 @@ sorted_log/
 _check/
 Dataset_0*/
 reference/
-spot_check_results.json
+/spot_check_results.json
 
 # Trained models and checkpoints (shared as a Release download, not in git;
 # checkpoints also contain local paths)
@@ -17,9 +17,9 @@ model/
 *.pt
 
 # Rebuilt automatically when missing
-bins.json
-belt_pieces.json
-machine_setup.json
+/bins.json
+/belt_pieces.json
+/machine_setup.json
 
 # Working copies of the part lists (the originals are in defaults/, see config.py)
 /parts.json

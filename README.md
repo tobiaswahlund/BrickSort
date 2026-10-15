@@ -55,7 +55,8 @@ git clone https://github.com/tobiaswahlund/BrickSort.git
 2. Download the trained model, `lego_model.pt`, from the [Releases](../../releases) page into `model/`.
 3. Double-click `scripts/windows/Start demo.bat` or `Start sorting machine.bat`.
 
-Everything else, including training your own model, is in [docs/USAGE.md](docs/USAGE.md).
+Everything else, including training your own model, is in [docs/USAGE.md](docs/USAGE.md), and every
+window is shown with what each button does in [docs/WINDOWS.md](docs/WINDOWS.md).
 
 ## Hard problems and decisions
 
