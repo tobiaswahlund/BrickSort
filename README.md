@@ -1,5 +1,7 @@
 # BrickSort
 
+[![CI](https://github.com/tobiaswahlund/BrickSort/actions/workflows/ci.yml/badge.svg)](https://github.com/tobiaswahlund/BrickSort/actions/workflows/ci.yml)
+
 Recognises LEGO parts from a camera picture and sorts them on a simulated conveyor belt.
 
 ![A piece is dropped in the demo and recognised, then the virtual sorting machine sorts pieces into bins](docs/images/bricksort.gif)

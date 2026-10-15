@@ -115,3 +115,5 @@ you ran `pip install -e .`):
 | `python -m bricksort.train 10` | train for 10 rounds |
 | `python -m bricksort.cut` / `colour_review` | cut out pieces / check colours |
 | `python -m bricksort.plastic_look` | measure the plastic's shine on your photos |
+| `python -m bricksort.evaluate` | the honest accuracy test (`Test accuracy.bat`) |
+| `pip install -e .[dev]`, then `pytest` and `ruff check .` | run the tests and the code checks (GitHub runs them on every push) |
