@@ -77,6 +77,7 @@ def make_references(only=None):
     config.REFERENCE.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
     parts = [p for p in catalog.load_parts() if not p.get("custom") and (not only or p["id"] in only)]
+    no_model = []
     for k, part in enumerate(parts, 1):
         try:
             if part["id"] == junk.NOT_LEGO:
@@ -90,10 +91,15 @@ def make_references(only=None):
                 reference_image(scene, rgb).save(config.REFERENCE / f"{part['id']}.png")
             finally:
                 scene.close()
+        except ValueError:   # no 3D model: the part is learned from photos only, and shown with one
+            no_model.append(part["id"])
         except Exception as e:
             print(f"  ! {part['id']}: {e}", flush=True)
         if k % 50 == 0:
             print(f"{k}/{len(parts)} reference pictures", flush=True)
+    if no_model:
+        print(f"{len(no_model)} parts have no 3D model, so no reference picture (they're learned from "
+              f"photos only): {', '.join(no_model)}")
 
 
 WEAR_VARIANTS = 4   # differently worn copies of each part (each gets its own dents and scratches)
