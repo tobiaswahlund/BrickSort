@@ -12,6 +12,7 @@ For each photo the pieces are found automatically and shown with numbered boxes.
   moves the photo to my_photos/_to_cut/done/.
 - Unfinished photos keep their boxes and typed answers (my_photos/_to_cut/progress/):
   saved when you go to another photo, close the window, or press "Save draft".
+  Changes to a finished photo are saved the same way when you go to another photo or close.
 """
 import json
 import sys
@@ -280,7 +281,7 @@ class Cutter(tk.Tk):
         bar.grid(row=1, column=0, columnspan=2, sticky="we", pady=(8, 0))
         self.save_btn = ttk.Button(bar, text="Save pieces, next photo", command=self.save)
         self.save_btn.pack(side="right")
-        ttk.Button(bar, text="Skip ▶", command=lambda: self.go(+1)).pack(side="right", padx=6)
+        ttk.Button(bar, text="Next ▶", command=lambda: self.go(+1)).pack(side="right", padx=6)
         ttk.Button(bar, text="◀ Back", command=lambda: self.go(-1)).pack(side="right")
         ttk.Button(bar, text="Save draft", command=self.save_draft).pack(side="left")
         self.status = Label(bar, text="", foreground="#666")
@@ -302,13 +303,23 @@ class Cutter(tk.Tk):
 
     def save_draft(self):
         """Remember the boxes and what's typed for this photo, to pick up later."""
-        if not self.path or self.reviewing:   # a finished photo only changes with Save changes
+        if not self.path:
+            return
+        if self.reviewing:   # a finished photo: changes replace what was saved for it
+            if self._changed():
+                self.save()
             return
         f = self._draft_file(self.path)
         f.parent.mkdir(exist_ok=True)
         f.write_text(json.dumps([{"box": box, "part": p.get(), "color": c.get()} for box, p, c in self.fields]),
                      encoding="utf-8")
         self.status.configure(text=f"Progress saved ({time.strftime('%H:%M:%S')})")
+
+    def _changed(self):
+        """True if a finished photo's pieces differ from what was saved for it."""
+        was = [(r["box"], r["part"], r["colour"]) for r in self._load_record(self.path) if r.get("box")]
+        now = [(list(box), p.get().strip(), c.get().strip()) for box, p, c in self.fields]
+        return was != now
 
     def close(self):
         self.save_draft()
@@ -318,7 +329,7 @@ class Cutter(tk.Tk):
         return [p for p in sorted(self.to_cut.glob("*")) if p.suffix.lower() in config.PHOTO_TYPES]
 
     def _photos(self):
-        """All photos for Back / Skip: the finished ones (in the order they were finished), then the new ones."""
+        """All photos for Back / Next: the finished ones (in the order they were finished), then the new ones."""
         done = self.to_cut / "done"
         finished = [p for p in done.glob("*") if p.suffix.lower() in config.PHOTO_TYPES] if done.exists() else []
 
@@ -706,7 +717,7 @@ class Cutter(tk.Tk):
         self.path = None
         new = self._new_photos()
         if not new:
-            messagebox.showinfo("All done", f"Saved {saved} pieces. Every photo is done; ◀ Back and Skip ▶ still "
+            messagebox.showinfo("All done", f"Saved {saved} pieces. Every photo is done; ◀ Back and Next ▶ still "
                                 "go through them, to check or change any of them.", parent=self)
             self.path = done / Path(self.path_was).name
             self.show(self.path, len(self._photos()))

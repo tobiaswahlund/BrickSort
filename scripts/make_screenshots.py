@@ -96,8 +96,8 @@ DESCRIBE = {
     # cut out pieces
     "Save draft": "Keep the boxes and answers for this photo, to finish later.",
     "◀ Back": "The previous photo (this one's progress is kept).",
-    "Skip ▶": "The next photo (this one's progress is kept).",
-    "Save pieces, next photo ▶": "Save one picture per piece in my_photos/<part>/<colour>/, then the next photo.",
+    "Next ▶": "The next photo (what you typed on this one is kept).",
+    "Save pieces, next photo": "Save one picture per piece in my_photos/<part>/<colour>/, then the next photo.",
     "_part_number": "The piece's part number (the model's guess is filled in). Empty = skip this piece.",
     "_part_colour": "Its colour. Unknown sends it to Check colours.",
     "_part_version": "For numbers with versions (3062a / 3062b): which one, or Unknown version.",

@@ -123,8 +123,8 @@ One picture per piece from photos of several pieces (Cut out pieces.bat).
 3. For numbers with versions (3062a / 3062b): which one, or Unknown version.
 4. **Save draft**: Keep the boxes and answers for this photo, to finish later.
 5. **◀ Back**: The previous photo (this one's progress is kept).
-6. **Skip ▶**: The next photo (this one's progress is kept).
-7. **Save pieces, next photo ▶**: Save one picture per piece in my_photos/<part>/<colour>/, then the next photo.
+6. **Next ▶**: The next photo (what you typed on this one is kept).
+7. **Save pieces, next photo**: Save one picture per piece in my_photos/<part>/<colour>/, then the next photo.
 
 ## Check colours
 
