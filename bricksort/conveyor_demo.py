@@ -3,7 +3,6 @@
 Run:  python -m bricksort.conveyor_demo
 Bins are set in bins.json (button "Edit bins…").
 """
-import os
 import subprocess
 import sys
 import time
@@ -15,15 +14,26 @@ from PIL import Image, ImageDraw, ImageTk
 
 from . import belts, catalog, config, machine_setup
 from .demo import reference_image
-from .viewer import PartViewer
 from .ldraw import Library
-from .ui import ImageBox, Label, make_copyable
-from .sorter import properties, rules as rules_mod
-from .sorter.piece_picker import PiecePicker, load_choice
-from .sorter.conveyor import (BELTS, DEFAULT_BELT, SPAWN_ALL, SPAWN_CHOSEN, SPAWN_TRAINED, ConveyorWorld, NoPieces,
-                              SimBelt, SimCamera, SimClock, SimDiverter)
+from .sorter import properties
+from .sorter import rules as rules_mod
 from .sorter.bin_editor import BinEditor
+from .sorter.conveyor import (
+    DEFAULT_BELT,
+    SPAWN_ALL,
+    SPAWN_CHOSEN,
+    SPAWN_TRAINED,
+    ConveyorWorld,
+    NoPieces,
+    SimBelt,
+    SimCamera,
+    SimClock,
+    SimDiverter,
+)
 from .sorter.machine import Machine
+from .sorter.piece_picker import PiecePicker, load_choice
+from .ui import ImageBox, Label, make_copyable
+from .viewer import PartViewer
 
 
 def tkimg(img, w, h=None):
@@ -154,7 +164,7 @@ class ConveyorDemo(tk.Tk):
         # how sure the model must be before a piece goes in a bin (else the rest bin); 0 = always its best guess
         self.sure = tk.IntVar(value=round(rules_mod.load()["confidence_needed"] * 100))
         self.sure_text = tk.StringVar(value=f"{self.sure.get()}%")
-        for i, (label, var, shown, lo, hi, tip) in enumerate((
+        for i, (label, var, shown, lo, hi, _tip) in enumerate((
                 ("Speed", self.speed, self.speed_text, 0.1, 2, ""),
                 ("Non-LEGO objects", self.junk, self.junk_text, 0, 50, "share of objects that aren't LEGO"),
                 ("Pieces touching", self.pairs, self.pairs_text, 0, 50, "share of pieces dropped onto another"),
@@ -345,7 +355,7 @@ class ConveyorDemo(tk.Tk):
             chunk = min(steps, 66)  # a camera picture at least every 0.13 simulated seconds
             steps -= chunk
             self.world.maybe_spawn()
-            for slot, b, truth in self.world.step(self.diverter, n=chunk):
+            for _slot, b, truth in self.world.step(self.diverter, n=chunk):
                 self._arrived(b, truth)
             frame = self.camera.frame()
             blobs, decisions = self.machine.step(frame)

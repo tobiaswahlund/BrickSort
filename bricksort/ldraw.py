@@ -6,6 +6,7 @@ references, and flatten everything into one list of triangles with the
 outward-facing winding (LDraw's "BFC" rules), in metres-ish world units.
 """
 import zipfile
+
 import numpy as np
 
 from . import config

@@ -15,8 +15,8 @@ For each photo the pieces are found automatically and shown with numbered boxes.
   my_photos/<part>/<colour>/, and the photo moves to my_photos/_to_cut/done/.
 """
 import json
-import sys
 import re
+import sys
 import time
 import tkinter as tk
 from pathlib import Path
@@ -27,8 +27,8 @@ import numpy as np
 from PIL import Image, ImageOps, ImageTk
 
 from . import catalog, config, custom
-from .ui import Label
 from .sorter.detector import Detector
+from .ui import Label
 
 TO_CUT = config.MY_PHOTOS / "_to_cut"
 TO_CUT_TEST = config.MY_PHOTOS / "_to_cut_test"   # photos for the honest test (python -m bricksort.cut --test)
@@ -232,7 +232,7 @@ class Cutter(tk.Tk):
             m = re.fullmatch(r"(\d+)([a-z]\d*)?", pid)
             if m:
                 self._versions.setdefault(m.group(1), []).append(pid)
-        for base, ids in self._versions.items():
+        for _base, ids in self._versions.items():
             ids.sort(key=lambda p: (p not in known, p))
         # the number box offers each piece once (3062, not 3062a and 3062b); exact numbers can still be typed
         bases = []

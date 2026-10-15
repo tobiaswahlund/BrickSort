@@ -5,8 +5,8 @@ It's small enough to run offline on a laptop or a Raspberry Pi.
 """
 import torch
 import torchvision
-from torchvision import transforms as T
 from PIL import Image
+from torchvision import transforms as T
 
 from . import config
 
@@ -66,7 +66,7 @@ class Recognizer:
         self.dev = device()
         self.net.to(self.dev).eval()
         self.info = ckpt.get("info", {})
-        from . import catalog   # colours that look the same (Light Gray / Light Bluish Gray) count as one
+        from . import catalog  # colours that look the same (Light Gray / Light Bluish Gray) count as one
         self.same = catalog.same_colour_ids(catalog.colors(include_trans=True))
 
     @torch.no_grad()

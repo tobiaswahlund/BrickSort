@@ -17,14 +17,14 @@ import numpy as np
 from PIL import Image, ImageTk
 
 from . import catalog, config, custom, junk
-from .ldraw import Library
-from .ui import MUTED, ImageBox, Label, make_copyable
-from .render import real_colors
 from .cut import autocomplete, wide_dropdown
+from .ldraw import Library
 from .model import Prediction
-from .viewer import PartViewer
+from .render import real_colors
 from .scene import DropScene
 from .train import load_square, photos_in
+from .ui import MUTED, ImageBox, Label, make_copyable
+from .viewer import PartViewer
 
 VIEW = 420  # size of the big 3D view on screen
 

@@ -5,11 +5,11 @@ would (see hardware.py), so the sorting logic can't tell the difference.
 
 World units: 1 unit = 100 mm real size (the parts are modelled 10x, see ldraw.py).
 """
-import numpy as np
 import mujoco
+import numpy as np
 
 from .. import belts, config, junk, machine_setup
-from ..belts import BELTS, DEFAULT_BELT
+from ..belts import DEFAULT_BELT
 from ..render import real_colors
 from ..scene import _fmt, close_renderer
 from . import hardware
@@ -173,7 +173,7 @@ class ConveyorWorld:
         self.bin_y = [-span / 2 + BIN_W / 2 + i * (BIN_W + BIN_GAP) for i in range(n_bins)]
         self.bins_x = bins_x
         assets, bodies, bins = [], [], []
-        for k, (pid, (v, f)) in enumerate(self.meshes):
+        for k, (_pid, (v, f)) in enumerate(self.meshes):
             assets.append(f'<mesh name="m{k}" vertex="{_fmt(v)}" face="{_fmt(f)}" inertia="convex"/>')
             bodies.append(f'<body name="p{k}" pos="{HIDDEN[0]} {HIDDEN[1] + k * 2} 0.3"><freejoint/>'
                           f'<geom name="g{k}" type="mesh" mesh="m{k}" rgba="0.5 0.5 0.5 0" density="1000" '

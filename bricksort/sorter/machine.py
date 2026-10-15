@@ -62,7 +62,7 @@ class Machine:
         out, used = [], set()
         for b in sorted(blobs, key=lambda b: b.cx):
             best, dist = None, 80.0
-            for tid, (x, y, _, seen, _) in self.tracks.items():
+            for tid, (x, y, _, _seen, _) in self.tracks.items():
                 d = math.hypot(b.cx - x, b.cy - y)
                 if tid not in used and d < dist and (b.cx - x) * self.camera.belt_direction > -15:
                     best, dist = tid, d

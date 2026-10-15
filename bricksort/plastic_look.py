@@ -89,7 +89,7 @@ def _photo_like_scenes(rng):
     """Common pieces in strong colours, dropped once on a white tray under two lamps from the
     sides, like the photos they're compared with. The same poses are reused for every setting."""
     from . import catalog, ldraw
-    from .scene import DropScene, N_LIGHTS
+    from .scene import N_LIGHTS, DropScene
     lib = ldraw.Library()
     table = catalog.colors()
     names = ["Red", "Blue", "Yellow", "Green", "Orange", "Dark Bluish Gray", "Medium Azure", "Lime",

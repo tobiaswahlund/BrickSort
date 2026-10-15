@@ -6,7 +6,8 @@ picture stay ordinary labels.
 """
 import math
 import tkinter as tk
-from tkinter import font as tkfont, ttk
+from tkinter import font as tkfont
+from tkinter import ttk
 
 from PIL import Image, ImageTk
 
@@ -99,9 +100,9 @@ class TextLabel(tk.Text):
         char = max(self._font.measure("0"), 1)
         if self._wrap:
             width_px = self._wrap
-            height = sum(max(1, math.ceil(self._font.measure(l) / width_px)) for l in lines)
+            height = sum(max(1, math.ceil(self._font.measure(line) / width_px)) for line in lines)
         else:
-            width_px = max((self._font.measure(l) for l in lines), default=0) + char
+            width_px = max((self._font.measure(line) for line in lines), default=0) + char
             height = len(lines)
         width = self._fixed_width or max(1, math.ceil(width_px / char))
         self.configure_raw(width=width, height=height)

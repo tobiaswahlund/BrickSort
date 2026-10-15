@@ -4,7 +4,6 @@ Run:  python -m bricksort.catalog [how_many_parts]
 """
 import csv
 import gzip
-import io
 import json
 import re
 import sys

@@ -30,9 +30,9 @@ import sys
 import time
 
 import torch
+from PIL import Image, ImageOps
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms as T
-from PIL import Image, ImageOps
 
 from . import catalog, config
 from .model import MEAN, STD, LegoNet, device, eval_transform
@@ -290,7 +290,7 @@ def main(epochs=8, log=say):
                     "category_classes": category_classes, "train": train, "n_sim_train": n_sim_train,
                     "val": val, "test": test}, str(CHECKPOINT) + ".tmp")
         os.replace(str(CHECKPOINT) + ".tmp", CHECKPOINT)  # never a half-written file if power goes mid-save
-        log(f"  (saved progress: safe to stop now and carry on later)")
+        log("  (saved progress: safe to stop now and carry on later)")
 
     if r is None:
         r = evaluate(net, val_dl, dev)

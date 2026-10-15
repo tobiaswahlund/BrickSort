@@ -37,9 +37,9 @@ def _base_family(name, rgb=None):
             return WORDS[w]
     if rgb is None:
         return "Other"
-    h, l, s = colorsys.rgb_to_hls(*(c / 255 for c in rgb))
+    h, light, s = colorsys.rgb_to_hls(*(c / 255 for c in rgb))
     if s < 0.15:
-        return "Black" if l < 0.2 else "White" if l > 0.85 else "Gray"
+        return "Black" if light < 0.2 else "White" if light > 0.85 else "Gray"
     hue = h * 360
     for limit, fam in ((15, "Red"), (45, "Orange"), (70, "Yellow"), (170, "Green"), (260, "Blue"),
                        (300, "Purple"), (345, "Pink"), (360, "Red")):

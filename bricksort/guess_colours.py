@@ -67,9 +67,10 @@ def model_colours(path, part, table):
     if _model is None:
         from .model import Recognizer
         _model = Recognizer()
-    from .train import load_square
     import torch
+
     from .model import eval_transform
+    from .train import load_square
     x = eval_transform(load_square(path)).unsqueeze(0).to(_model.dev)
     with torch.no_grad():
         probs = torch.softmax(_model.net(x)[1], 1)[0].cpu().numpy()

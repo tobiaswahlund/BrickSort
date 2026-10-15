@@ -256,9 +256,9 @@ def capture(window, name, special=None):
         font = ImageFont.truetype("segoeuib.ttf", 13)
     except OSError:
         font = ImageFont.load_default()
-    for n, (a, b, c, e) in boxes:
+    for _, (a, b, c, e) in boxes:
         d.rectangle((a + pad, b + pad, c + pad, e + pad), outline=RED, width=2)
-    for n, (a, b, c, e) in boxes:   # numbers on top of all boxes
+    for n, (a, b, _, _) in boxes:   # numbers on top of all boxes
         cx, cy = a + pad, b + pad
         r = 9
         d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=RED)
@@ -391,7 +391,7 @@ def run(name):
 
         def shoot():
             special = {}
-            for box, part, col in app.fields:
+            for _box, part, col in app.fields:
                 special[part.number] = "_part_number"
                 special[part.version] = "_part_version"
                 special[col] = "_part_colour"

@@ -1,7 +1,7 @@
 """Finding pieces on the belt (bricksort/sorter/detector.py), on made-up camera pictures."""
 import numpy as np
 
-from bricksort.sorter.detector import Detector, connected_components, crop, merge_close, Blob
+from bricksort.sorter.detector import Blob, Detector, connected_components, crop, merge_close
 
 H, W = 240, 320
 

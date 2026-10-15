@@ -8,9 +8,8 @@ import re
 import sys
 import time
 
-import numpy as np
 import mujoco
-from PIL import Image
+import numpy as np
 
 from . import catalog, config, junk, machine_setup, wear
 from .ldraw import Library

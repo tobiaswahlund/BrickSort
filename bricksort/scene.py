@@ -9,8 +9,8 @@ lights of different number, strength, colour and angle, matte-to-glossy
 plastic, varied backgrounds, tilted camera angles, and (in messy.py) blur,
 noise, colour casts, scratches and dirt.
 """
-import numpy as np
 import mujoco
+import numpy as np
 from PIL import Image
 
 from . import machine_setup, messy, surfaces
@@ -191,7 +191,7 @@ class DropScene:
     def sorter_look(self, rng):
         """Like your sorting machine (machine setup): its belt underneath, its lamps above and a little
         to the side (with a little variety), no light from the camera."""
-        m, h = self.model, self.cam_h
+        m = self.model
         self.rng = rng
         setup = machine_setup.load()
         belts = [self.surface_mats[i] for i, n in enumerate(surfaces.SURFACES) if n in surfaces.SORTER_BELTS]

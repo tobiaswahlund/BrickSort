@@ -5,7 +5,6 @@ from the bare belt (and isn't just a shadow) is an object. Touching pieces show
 up as one bigger object; separate pieces as several.
 """
 from dataclasses import dataclass
-from collections import deque
 
 import numpy as np
 

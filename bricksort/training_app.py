@@ -260,6 +260,7 @@ class TrainingApp(tk.Tk):
     def _update_look(self, new_piece=False):
         """Rebuild the 3D preview with the settings as they are in the tab (not saved)."""
         import numpy as np
+
         from . import catalog
         from .viewer import LookPreview
         machine_setup.use(self._setup_values())
@@ -332,6 +333,7 @@ class TrainingApp(tk.Tk):
         def work():
             try:
                 import numpy as np
+
                 from . import catalog, render
                 if getattr(self, "lib", None) is None:
                     from .ldraw import Library

@@ -50,7 +50,7 @@ class Balanced:
             kind = "render" if DATASET_RENDER.match(path.name) else "photo"
             groups.setdefault((part, kind), {}).setdefault(items[i][2], []).append(i)
         self.groups = []
-        for (part, kind), by_colour in sorted(groups.items(), key=lambda kv: str(kv[0])):
+        for (_, kind), by_colour in sorted(groups.items(), key=lambda kv: str(kv[0])):
             n = sum(len(v) for v in by_colour.values())
             cap = PHOTO_CAP if kind == "photo" else RENDER_CAP
             take = min(cap, n * (REAL_WEIGHT if kind == "photo" else 1))
