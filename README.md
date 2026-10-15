@@ -91,7 +91,8 @@ window is shown with what each button does in [docs/WINDOWS.md](docs/WINDOWS.md)
 - Part, colour and set data: [Rebrickable](https://rebrickable.com/downloads/).
 - Photos: "Images of LEGO bricks" (Gdańsk University of Technology,
   [doi:10.34808/arsb-4268](https://doi.org/10.34808/arsb-4268)), CC BY 4.0, and "LEGO bricks for
-  training classification network" (Gdańsk University of Technology).
+  training classification network" (Boiński, Zaraziński and Śledź, Gdańsk University of Technology, 2021,
+  [doi:10.34808/rcza-jy08](https://doi.org/10.34808/rcza-jy08)), CC BY 4.0.
 - Scenes of many pieces: "B200 LEGO Detection Dataset" (Kaggle), CC BY-SA 4.0.
 - Physics and rendering: [MuJoCo](https://mujoco.org). Network: PyTorch / torchvision.
 
