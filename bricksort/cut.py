@@ -8,11 +8,11 @@ For each photo the pieces are found automatically and shown with numbered boxes.
   right-click a box to remove it.
 - The model's guess for part and colour is filled in; fix what's wrong
   (clear the part number to skip a piece).
-- "Save pieces, next photo" files each piece in my_photos/<part>/<colour>/ and
-  moves the photo to my_photos/_to_cut/done/.
-- Unfinished photos keep their boxes and typed answers (my_photos/_to_cut/progress/):
-  saved when you go to another photo, close the window, or press "Save draft".
-  Changes to a finished photo are saved the same way when you go to another photo or close.
+- ◀ Back / Next ▶ keep what you typed (my_photos/_to_cut/progress/); closing the window does too.
+  Changes to a finished photo are saved the same way.
+- "Save and exit" first lists any piece still missing a number or colour (fix them, or leave those
+  photos for later). Every photo whose pieces all have both is then filed: one picture per piece in
+  my_photos/<part>/<colour>/, and the photo moves to my_photos/_to_cut/done/.
 """
 import json
 import sys
@@ -279,11 +279,9 @@ class Cutter(tk.Tk):
         scroll.pack(side="right", fill="y")
         bar = ttk.Frame(self)
         bar.grid(row=1, column=0, columnspan=2, sticky="we", pady=(8, 0))
-        self.save_btn = ttk.Button(bar, text="Save pieces, next photo", command=self.save)
-        self.save_btn.pack(side="right")
+        ttk.Button(bar, text="Save and exit", command=self.save_and_exit).pack(side="right")
         ttk.Button(bar, text="Next ▶", command=lambda: self.go(+1)).pack(side="right", padx=6)
         ttk.Button(bar, text="◀ Back", command=lambda: self.go(-1)).pack(side="right")
-        ttk.Button(bar, text="Save draft", command=self.save_draft).pack(side="left")
         self.status = Label(bar, text="", foreground="#666")
         self.status.pack(side="left", padx=8)
         self.columnconfigure(0, weight=1)
@@ -294,7 +292,7 @@ class Cutter(tk.Tk):
 
     @property
     def reviewing(self):
-        """True while a finished photo (in done/) is shown: it's changed with Save changes."""
+        """True while a finished photo (in done/) is shown: changes are saved when you leave it."""
         return self.path is not None and self.path.parent.name == "done"
 
     # ---------- unfinished work is kept per photo, in _to_cut/progress/ ----------
@@ -363,8 +361,8 @@ class Cutter(tk.Tk):
             record = [r for r in self._load_record(path) if r.get("box")]
             self.boxes = [r["box"] for r in record]
             self.fields = [(box, _Value(r["part"]), _Value(r["colour"])) for box, r in zip(self.boxes, record)]
-            how = (f"FINISHED photo, {len(self.boxes)} pieces as you saved them. Change anything and press "
-                   "Save changes"
+            how = (f"FINISHED photo, {len(self.boxes)} pieces as you saved them. Change anything: it's saved "
+                   "when you go to another photo"
                    if record else "FINISHED photo, but there's no record of its pieces (finished before records "
                    "were kept): saving adds new pictures, the old ones stay")
         elif draft.exists():  # pick up where you left off
@@ -386,7 +384,6 @@ class Cutter(tk.Tk):
         photos = self._photos()
         where = (f"photo {photos.index(path) + 1} of {len(photos)}, {len(self._new_photos())} not done yet"
                  if path in photos else "")
-        self.save_btn.configure(text="Save changes" if self.reviewing else "Save pieces, next photo")
         self.info.configure(text=test + f"{path.name}: {how} ({where}).\n"
                                  "Drag on the photo to add a missed piece. Drag a box's edge or corner to resize it. "
                                  "Right-click a box to remove it.")
@@ -646,7 +643,63 @@ class Cutter(tk.Tk):
         self.boxes = [b for b in self.boxes if not (b[0] * s <= e.x <= b[2] * s and b[1] * s <= e.y <= b[3] * s)]
         self._redraw()
 
-    def save(self):
+    @staticmethod
+    def _gaps(pieces):
+        """'piece 2: no colour' for each (part, colour) pair missing either."""
+        out = []
+        for k, (part, colour) in enumerate(pieces, 1):
+            missing = [what for what, v in (("number", part), ("colour", colour))
+                       if not str(v).strip() or str(v).strip() == catalog.SEPARATOR]
+            if missing:
+                out.append(f"piece {k}: no {' or '.join(missing)}")
+        return out
+
+    def save_and_exit(self):
+        """Check every photo you've worked on for pieces without a number or colour, then file the
+        finished ones and close."""
+        photos = self._photos()
+        if self.reviewing:   # a finished photo being changed: check it before its changes are saved
+            gaps = self._gaps([(p.get(), c.get()) for _, p, c in self.fields])
+            if gaps and messagebox.askyesno("Missing answers", f"{self.path.name}: " + "; ".join(gaps)
+                                            + ".\n\nFix them now?", parent=self):
+                return
+        self.save_draft()
+        ready, todo, untouched = [], [], 0
+        for p in self._new_photos():
+            draft = self._draft_file(p)
+            if not draft.exists():
+                untouched += 1
+                continue
+            gaps = self._gaps([(d["part"], d["color"]) for d in json.loads(draft.read_text(encoding="utf-8"))])
+            (todo if gaps else ready).append((p, gaps))
+        if todo:
+            lines = "\n".join(f"Photo {photos.index(p) + 1} ({p.name}): " + "; ".join(g) for p, g in todo[:12])
+            more = f"\n...and {len(todo) - 12} more photos" if len(todo) > 12 else ""
+            if messagebox.askyesno("Some pieces aren't finished", lines + more + "\n\nFix them now? (No: save the "
+                                   "rest and exit; these photos stay for later.)", parent=self):
+                self.show(todo[0][0], len(photos))
+                return
+        saved, held = 0, 0
+        for p, _ in ready:
+            self.show(p, len(photos))
+            n = self.save(move_on=False)
+            if n is None:
+                held += 1
+            else:
+                saved += n
+        self.path = None
+        left = len(todo) + held
+        if not left and not untouched:
+            msg = f"All cutouts are done. Saved {_n(saved, 'piece')} from {_n(len(ready), 'photo')}."
+        else:
+            msg = (f"Saved {_n(saved, 'piece')} from {_n(len(ready) - held, 'photo')}.\n"
+                   + (f"Pieces still to finish: {_n(left, 'photo')}.\n" if left else "")
+                   + (f"Not opened yet: {_n(untouched, 'photo')}.\n" if untouched else "")
+                   + "They're kept for next time.")
+        messagebox.showinfo("Saved", msg, parent=self)
+        self.destroy()
+
+    def save(self, move_on=True):
         """Save one picture per piece. New photo: then it moves to done/ and the next one is shown.
         Finished photo, or one saved partly before: the pictures saved for it before are replaced."""
         record = self._load_record(self.path)
@@ -703,18 +756,20 @@ class Cutter(tk.Tk):
         self._save_record(self.path, record)
         if self.reviewing:
             self.status.configure(text=f"Changes saved: {saved} pieces ({time.strftime('%H:%M:%S')}).")
-            return
+            return saved
         if held:  # some pieces still need a number: every piece stays on the photo, as typed
             self._redraw()
             self.save_draft()
             self.status.configure(text=f"Saved {saved} pieces. The photo stays here until the rest have numbers.")
-            return
+            return None
         done = self.to_cut / "done"
         done.mkdir(exist_ok=True)
         self._draft_file(self.path).unlink(missing_ok=True)
         self.path_was = str(self.path)
         self.path.rename(done / self.path.name)
         self.path = None
+        if not move_on:
+            return saved
         new = self._new_photos()
         if not new:
             messagebox.showinfo("All done", f"Saved {saved} pieces. Every photo is done; ◀ Back and Next ▶ still "
@@ -766,6 +821,10 @@ class Cutter(tk.Tk):
                            "part": (folder.parent if in_colour else folder).name,
                            "colour": folder.name if in_colour else "Unknown", "file": str(f)})
         return record
+
+
+def _n(k, word):
+    return f"{k} {word}{'' if k == 1 else 's'}"
 
 
 def run():

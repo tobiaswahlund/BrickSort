@@ -121,10 +121,9 @@ One picture per piece from photos of several pieces (Cut out pieces.bat).
 1. The piece's part number (the model's guess is filled in). Empty = skip this piece.
 2. Its colour. Unknown sends it to Check colours.
 3. For numbers with versions (3062a / 3062b): which one, or Unknown version.
-4. **Save draft**: Keep the boxes and answers for this photo, to finish later.
-5. **◀ Back**: The previous photo (this one's progress is kept).
-6. **Next ▶**: The next photo (what you typed on this one is kept).
-7. **Save pieces, next photo**: Save one picture per piece in my_photos/<part>/<colour>/, then the next photo.
+4. **◀ Back**: The previous photo (what you typed on this one is kept).
+5. **Next ▶**: The next photo (what you typed on this one is kept).
+6. **Save and exit**: Check for pieces missing a number or colour, then save one picture per piece in my_photos/<part>/<colour>/ for every finished photo, and close.
 
 ## Check colours
 
