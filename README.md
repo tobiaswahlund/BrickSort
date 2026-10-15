@@ -42,6 +42,11 @@ What it shows:
   the same sessions and bricks as the training photos, so it doesn't show how the model does on new ones.
 - Full details: [results/RESULTS.md](results/RESULTS.md).
 
+This is where the released model stands today. I'll keep training better models and re-running this
+same test, and the table will be updated with each new release. You don't have to wait for me: you can
+train your own, on your own photos and your own machine's belt and lamps, with **Model training.bat**
+(see [Training](docs/USAGE.md#training)), and score it with `python -m bricksort.evaluate`.
+
 ## How it works
 
 ```mermaid
@@ -98,8 +103,8 @@ window is shown with what each button does in [docs/WINDOWS.md](docs/WINDOWS.md)
   servo flap and Arduino are next.
 - About 600 parts. Rarer parts are only recognised by category.
 - The launchers are Windows-only; the Python commands work elsewhere too.
-- Colours on new photos (30%, see Results): next is matching the plastic's shine to real photos and
-  retraining, then re-running the same test.
+- Colours on new photos (30%, see Results). The plastic's shine has now been matched to real photos
+  by eye; the next model is trained with it and scored on the same test.
 
 ## Credits
 
