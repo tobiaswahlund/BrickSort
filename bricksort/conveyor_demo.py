@@ -54,6 +54,7 @@ class ConveyorDemo(tk.Tk):
         self.tick_no = 0
         self._build_ui()
         self.setup()
+        self.protocol("WM_DELETE_WINDOW", self.close)
 
     # ---------------------------------------------------------- set-up
     def setup(self):
@@ -221,6 +222,10 @@ class ConveyorDemo(tk.Tk):
         # a focused button already reacts to Space itself, and the log uses it for typing nothing
         if not isinstance(e.widget, (ttk.Button, ttk.Combobox, tk.Text)):
             self.toggle()
+
+    def close(self):
+        self.running = False   # stop the belt first, so no pending step runs on a closed window
+        self.after(50, self.destroy)
 
     def clear_log(self):
         self.log.configure(state="normal")

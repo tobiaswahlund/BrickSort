@@ -35,7 +35,13 @@ rem the rest (mujoco, numpy, pillow), and BrickSort itself as an editable instal
 
 echo.
 echo Downloading the LEGO part library and part lists, about 160 MB ...
-"%PY%" -c "from bricksort import catalog, ldraw; ldraw.Library(); catalog.colors(); catalog.twins(); print('Done')"
+"%PY%" -c "from bricksort import catalog, ldraw; ldraw.Library(); catalog.colors(); catalog.twins(); [catalog.read_csv(n) for n in ('parts', 'part_categories', 'inventory_parts')]; print('Done')"
+
+if not exist "%PROJECT%eference" (
+    echo.
+    echo Making a reference picture of every part, about 2 minutes ...
+    "%PY%" -m bricksort.render references
+)
 
 echo.
 if not exist "%PROJECT%\model\lego_model.pt" (

@@ -24,7 +24,7 @@ def url(tag=None):
 def main(tag=None):
     config.MODEL_DIR.mkdir(exist_ok=True)
     tmp = config.MODEL_FILE.with_suffix(".download")
-    print(f"Downloading the trained model from {url(tag)} …", flush=True)
+    print(f"Downloading the trained model from {url(tag)} ...", flush=True)
     req = urllib.request.Request(url(tag), headers={"User-Agent": "BrickSort/0.1"})
     try:
         with urllib.request.urlopen(req, timeout=60) as r, open(tmp, "wb") as f:
