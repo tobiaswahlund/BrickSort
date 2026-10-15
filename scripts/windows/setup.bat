@@ -38,5 +38,11 @@ echo Downloading the LEGO part library and part lists, about 160 MB ...
 "%PY%" -c "from bricksort import catalog, ldraw; ldraw.Library(); catalog.colors(); catalog.twins(); print('Done')"
 
 echo.
+if not exist "%PROJECT%\model\lego_model.pt" (
+    echo Downloading the trained model, about 25 MB ...
+    "%PY%" -m bricksort.get_model
+)
+
+echo.
 echo All set! Double-click "Start demo.bat" or "Start sorting machine.bat".
 pause

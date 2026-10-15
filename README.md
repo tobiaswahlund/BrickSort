@@ -51,9 +51,10 @@ flowchart LR
 git clone https://github.com/tobiaswahlund/BrickSort.git
 ```
 
-1. Double-click `scripts/windows/setup.bat` (installs Python, PyTorch and MuJoCo, downloads the part library).
-2. Download the trained model, `lego_model.pt`, from the [Releases](../../releases) page into `model/`.
-3. Double-click `scripts/windows/Start demo.bat` or `Start sorting machine.bat`.
+1. Double-click `scripts/windows/setup.bat`. It installs Python, PyTorch and MuJoCo, downloads the part
+   library and the trained model (from [Releases](../../releases); `python -m bricksort.get_model` does
+   that step on its own).
+2. Double-click `scripts/windows/Start demo.bat` or `Start sorting machine.bat`.
 
 Everything else, including training your own model, is in [docs/USAGE.md](docs/USAGE.md), and every
 window is shown with what each button does in [docs/WINDOWS.md](docs/WINDOWS.md).
