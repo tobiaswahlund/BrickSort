@@ -1,0 +1,90 @@
+{
+  "model": "lego_model.pt",
+  "model_sha256": "cfb1c36786db66f530f9b790440af5827c7012d818d2fe46511d93f0dab0a03b",
+  "tested": "2026-10-15 15:22",
+  "photos": 163,
+  "pieces": 163,
+  "known_pieces": 140,
+  "part_first_guess": {
+    "right": 0.5285714285714286,
+    "pieces": 140,
+    "low": 0.4462266936992517,
+    "high": 0.6093900402636631
+  },
+  "part_top5": {
+    "right": 0.8214285714285714,
+    "pieces": 140,
+    "low": 0.7496682125749768,
+    "high": 0.8760200445078142
+  },
+  "colour": {
+    "right": 0.3,
+    "pieces": 140,
+    "low": 0.2302612501710218,
+    "high": 0.38042161208857483
+  },
+  "colour_all_pieces": {
+    "right": 0.3067484662576687,
+    "pieces": 163,
+    "low": 0.2410822154387965,
+    "high": 0.3813141173702871
+  },
+  "category_unknown_parts": {
+    "right": 0.43478260869565216,
+    "pieces": 23,
+    "low": 0.25634368332198654,
+    "high": 0.6318895069498304
+  },
+  "most_confused": [
+    {
+      "real": "3003",
+      "guessed": "multiple",
+      "photos": 2
+    },
+    {
+      "real": "3004",
+      "guessed": "multiple",
+      "photos": 2
+    },
+    {
+      "real": "3023",
+      "guessed": "multiple",
+      "photos": 2
+    },
+    {
+      "real": "3622",
+      "guessed": "multiple",
+      "photos": 2
+    },
+    {
+      "real": "3666",
+      "guessed": "3460",
+      "photos": 2
+    },
+    {
+      "real": "6587",
+      "guessed": "32073",
+      "photos": 2
+    },
+    {
+      "real": "2420",
+      "guessed": "multiple",
+      "photos": 1
+    },
+    {
+      "real": "2454a",
+      "guessed": "54200",
+      "photos": 1
+    },
+    {
+      "real": "2454a",
+      "guessed": "90195",
+      "photos": 1
+    },
+    {
+      "real": "2456",
+      "guessed": "3009",
+      "photos": 1
+    }
+  ]
+}

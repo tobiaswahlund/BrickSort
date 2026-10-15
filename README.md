@@ -23,9 +23,24 @@ Recognises LEGO parts from a camera picture and sorts them on a simulated convey
 
 ## Results
 
-Evaluation in progress: a test on photos of pieces the model has never seen, drawn at random from a
-mixed tub. (The number the training prints, measured on held-back dataset photos, is optimistic:
-those photos come from the same sessions and the same physical bricks as the training photos.)
+Tested on 163 phone photos of different bricks from a mixed tub, labelled by hand without seeing
+the model's guesses and never used in training (`python -m bricksort.evaluate`, model v0.1.0).
+140 of them are parts the model knows; the part and colour scores are on those.
+
+| | Right | 95% range | Pieces |
+|---|---|---|---|
+| Part, first guess | 53% | 45%–61% | 140 |
+| Part, within top 5 | 82% | 75%–88% | 140 |
+| Colour | 30% | 23%–38% | 140 |
+| Category of parts it doesn't know | 43% | 26%–63% | 23 |
+
+What it shows:
+- Colour is the weak spot: greys come out too light. Light Bluish Gray was called White 25 times
+  and Dark Bluish Gray 18 times. The likely cause is light reflected off the plastic, which is
+  brighter in these photos than in the training pictures.
+- The number the training prints (on held-back dataset photos) is much higher. Those photos come from
+  the same sessions and bricks as the training photos, so it doesn't show how the model does on new ones.
+- Full details: [results/RESULTS.md](results/RESULTS.md).
 
 ## How it works
 
@@ -83,7 +98,8 @@ window is shown with what each button does in [docs/WINDOWS.md](docs/WINDOWS.md)
   servo flap and Arduino are next.
 - About 600 parts. Rarer parts are only recognised by category.
 - The launchers are Windows-only; the Python commands work elsewhere too.
-- The honest accuracy test (above) is still to come.
+- Colours on new photos (30%, see Results): next is matching the plastic's shine to real photos and
+  retraining, then re-running the same test.
 
 ## Credits
 
