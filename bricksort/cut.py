@@ -283,18 +283,18 @@ class Cutter(tk.Tk):
         ttk.Button(bar, text="Skip ▶", command=lambda: self.go(+1)).pack(side="right", padx=6)
         ttk.Button(bar, text="◀ Back", command=lambda: self.go(-1)).pack(side="right")
         ttk.Button(bar, text="Save draft", command=self.save_draft).pack(side="left")
-        # look at photos already finished, to check them or fix a mistake
-        self.review_btn = ttk.Button(bar, text="Finished photos",
-                                     command=lambda: self._set_reviewing(not self.reviewing))
-        self.review_btn.pack(side="left", padx=6)
         self.status = Label(bar, text="", foreground="#666")
         self.status.pack(side="left", padx=8)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.path = None
-        self.reviewing = False   # True: looking through finished photos (done/)
         self.go(0)
+
+    @property
+    def reviewing(self):
+        """True while a finished photo (in done/) is shown: it's changed with Save changes."""
+        return self.path is not None and self.path.parent.name == "done"
 
     # ---------- unfinished work is kept per photo, in _to_cut/progress/ ----------
     def _draft_file(self, path):
@@ -314,25 +314,34 @@ class Cutter(tk.Tk):
         self.save_draft()
         self.destroy()
 
+    def _new_photos(self):
+        return [p for p in sorted(self.to_cut.glob("*")) if p.suffix.lower() in config.PHOTO_TYPES]
+
     def _photos(self):
-        folder = self.to_cut / "done" if self.reviewing else self.to_cut
-        return [p for p in sorted(folder.glob("*")) if p.suffix.lower() in config.PHOTO_TYPES]
+        """All photos for Back / Skip: the finished ones (in the order they were finished), then the new ones."""
+        done = self.to_cut / "done"
+        finished = [p for p in done.glob("*") if p.suffix.lower() in config.PHOTO_TYPES] if done.exists() else []
+
+        def finished_at(p):
+            r = self._record_file(p)
+            return (r if r.exists() else p).stat().st_mtime
+        return sorted(finished, key=finished_at) + self._new_photos()
 
     def go(self, step):
         """Show the previous (-1) / next (+1) photo, keeping the progress on this one."""
         photos = self._photos()
         if not photos:
-            done = self.to_cut / "done"
-            if not self.reviewing and any(p.suffix.lower() in config.PHOTO_TYPES for p in done.glob("*")):
-                self._set_reviewing(True)   # nothing new: show the finished ones
-                return
-            messagebox.showinfo("All done", f"No more photos in my_photos/{self.to_cut.name}.")
+            messagebox.showinfo("All done", f"No photos in my_photos/{self.to_cut.name}.")
             self.destroy()
             return
         if self.path:
             self.save_draft()
-        i = photos.index(self.path) if self.path in photos else 0
-        self.show(photos[(i + step) % len(photos)], len(photos))
+        if self.path in photos:
+            i = (photos.index(self.path) + step) % len(photos)
+        else:   # starting: the first new photo (or the last finished one if nothing is new)
+            new = self._new_photos()
+            i = photos.index(new[0]) if new else len(photos) - 1
+        self.show(photos[i], len(photos))
 
     def show(self, path, n_photos):
         self.path = path
@@ -343,7 +352,8 @@ class Cutter(tk.Tk):
             record = [r for r in self._load_record(path) if r.get("box")]
             self.boxes = [r["box"] for r in record]
             self.fields = [(box, _Value(r["part"]), _Value(r["colour"])) for box, r in zip(self.boxes, record)]
-            how = (f"FINISHED photo, {len(self.boxes)} pieces saved. Fix anything and press Save changes"
+            how = (f"FINISHED photo, {len(self.boxes)} pieces as you saved them. Change anything and press "
+                   "Save changes"
                    if record else "FINISHED photo, but there's no record of its pieces (finished before records "
                    "were kept): saving adds new pictures, the old ones stay")
         elif draft.exists():  # pick up where you left off
@@ -358,8 +368,11 @@ class Cutter(tk.Tk):
         self.status.configure(text="")
         test = ("TEST PIECES: type the part and colour yourself; the model's guesses are hidden on purpose. "
                 "Pieces it doesn't know are fine: keep them.\n") if self.test else ""
-        where = f"{self.to_cut.name}/done" if self.reviewing else self.to_cut.name
-        self.info.configure(text=test + f"{path.name}: {how} ({n_photos} photos in {where}).\n"
+        photos = self._photos()
+        where = (f"photo {photos.index(path) + 1} of {len(photos)}, {len(self._new_photos())} not done yet"
+                 if path in photos else "")
+        self.save_btn.configure(text="Save changes" if self.reviewing else "Save pieces, next photo")
+        self.info.configure(text=test + f"{path.name}: {how} ({where}).\n"
                                  "Drag on the photo to add a missed piece. Drag a box's edge or corner to resize it. "
                                  "Right-click a box to remove it.")
         self._redraw()
@@ -592,7 +605,8 @@ class Cutter(tk.Tk):
         if self.resizing:
             i, _ = self.resizing
             x0, y0, x1, y1 = self.boxes[i]
-            self.boxes[i] = [min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)]
+            # changed in place: the same box, so the piece keeps the part and colour typed for it
+            self.boxes[i][:] = [min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)]
             self.guesses.pop(tuple(self.boxes[i]), None)
             self.resizing = None
             self._redraw()
@@ -680,17 +694,18 @@ class Cutter(tk.Tk):
         done = self.to_cut / "done"
         done.mkdir(exist_ok=True)
         self._draft_file(self.path).unlink(missing_ok=True)
-        photos = self._photos()
-        i = photos.index(self.path)
+        self.path_was = str(self.path)
         self.path.rename(done / self.path.name)
         self.path = None
-        rest = self._photos()
-        if not rest:
-            messagebox.showinfo("All done", f"Saved {saved} pieces. No more new photos in my_photos/{self.to_cut.name}."
-                                "\nFinished photos can still be checked with Finished photos.", parent=self)
-            self._set_reviewing(True)
+        new = self._new_photos()
+        if not new:
+            messagebox.showinfo("All done", f"Saved {saved} pieces. Every photo is done; ◀ Back and Skip ▶ still "
+                                "go through them, to check or change any of them.", parent=self)
+            self.path = done / Path(self.path_was).name
+            self.show(self.path, len(self._photos()))
             return
-        self.show(rest[min(i, len(rest) - 1)], len(rest))
+        later = [p for p in new if p.name > Path(self.path_was).name]
+        self.show((later or new)[0], len(self._photos()))
         self.status.configure(text=f"Saved {saved} pieces from the last photo.")
 
     # ---------- finished photos: what was saved for each, so it can be checked and fixed later ----------
@@ -734,22 +749,6 @@ class Cutter(tk.Tk):
                            "colour": folder.name if in_colour else "Unknown", "file": str(f)})
         return record
 
-    def _set_reviewing(self, on):
-        has_new = any(p.suffix.lower() in config.PHOTO_TYPES for p in self.to_cut.glob("*"))
-        if not on and not has_new:
-            messagebox.showinfo("No new photos", f"There are no new photos in my_photos/{self.to_cut.name}.",
-                                parent=self)
-            return
-        if on and not any(p.suffix.lower() in config.PHOTO_TYPES for p in (self.to_cut / "done").glob("*")):
-            messagebox.showinfo("No finished photos", "No photos have been finished yet.", parent=self)
-            return
-        if self.path and not self.reviewing:
-            self.save_draft()
-        self.reviewing = on
-        self.review_btn.configure(text="New photos" if on else "Finished photos")
-        self.save_btn.configure(text="Save changes" if on else "Save pieces, next photo")
-        self.path = None
-        self.go(0)
 
 def run():
     app = Cutter(test="--test" in sys.argv)

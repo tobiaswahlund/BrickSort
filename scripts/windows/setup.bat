@@ -37,7 +37,7 @@ echo.
 echo Downloading the LEGO part library and part lists, about 160 MB ...
 "%PY%" -c "from bricksort import catalog, ldraw; ldraw.Library(); catalog.colors(); catalog.twins(); [catalog.read_csv(n) for n in ('parts', 'part_categories', 'inventory_parts')]; print('Done')"
 
-if not exist "%PROJECT%eference" (
+if not exist "%PROJECT%\reference" (
     echo.
     echo Making a reference picture of every part, about 2 minutes ...
     "%PY%" -m bricksort.render references
