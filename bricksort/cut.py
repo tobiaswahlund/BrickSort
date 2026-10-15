@@ -359,6 +359,10 @@ class Cutter(tk.Tk):
         elif draft.exists():  # pick up where you left off
             saved = json.loads(draft.read_text(encoding="utf-8"))
             self.boxes = [d["box"] for d in saved]
+            # pieces already saved from this photo (left out of older drafts) come back as they were saved
+            saved += [{"box": r["box"], "part": r["part"], "color": r["colour"]} for r in self._load_record(path)
+                      if r.get("box") and r["box"] not in [d["box"] for d in saved]]
+            self.boxes = [d["box"] for d in saved]
             self.fields = [(box, _Value(d["part"]), _Value(d["color"])) for box, d in zip(self.boxes, saved)]
             how = f"continuing your saved progress: {len(self.boxes)} pieces"
         else:
@@ -633,9 +637,9 @@ class Cutter(tk.Tk):
 
     def save(self):
         """Save one picture per piece. New photo: then it moves to done/ and the next one is shown.
-        Finished photo (Finished photos view): the pictures saved for it before are replaced."""
+        Finished photo, or one saved partly before: the pictures saved for it before are replaced."""
         record = self._load_record(self.path)
-        if self.reviewing:   # replace what was saved for this photo before (the pieces shown on it)
+        if record:   # replace what was saved for this photo before (the pieces shown on it)
             for r in record:
                 if r.get("file") and r.get("box"):
                     Path(r["file"]).unlink(missing_ok=True)
@@ -649,8 +653,12 @@ class Cutter(tk.Tk):
             if "+" in pid:  # several parts that belong together: one combo piece
                 pid = self._combo([catalog.base_part(x.strip()) for x in pid.split("+") if x.strip()])
             else:
+                chosen = pid
                 pid = catalog.folder_part(pid) or pid  # printed version -> plain part
-                if pid not in self.rebrickable and pid not in self.custom_names and pid not in catalog.SPECIAL:
+                # a version picked from the list (970c03) is known even if its folder name (970c00) isn't
+                known = (chosen in self.rebrickable or pid in self.rebrickable or pid in self.part_ids
+                         or pid in self.custom_names or pid in catalog.SPECIAL)
+                if not known:
                     pid = self._unknown_number(pid, square_crop(self.img, box))
                     if pid is None:  # "Not now": keep this piece (and the photo) for later
                         held = True
@@ -685,11 +693,10 @@ class Cutter(tk.Tk):
         if self.reviewing:
             self.status.configure(text=f"Changes saved: {saved} pieces ({time.strftime('%H:%M:%S')}).")
             return
-        if held:  # some pieces still need a number: the saved ones leave the list, the photo stays
-            self.boxes = [b for b in self.boxes if not any(b is s for s in saved_boxes)]
+        if held:  # some pieces still need a number: every piece stays on the photo, as typed
             self._redraw()
             self.save_draft()
-            self.status.configure(text=f"Saved {saved} pieces. The rest stay here until you fix their numbers.")
+            self.status.configure(text=f"Saved {saved} pieces. The photo stays here until the rest have numbers.")
             return
         done = self.to_cut / "done"
         done.mkdir(exist_ok=True)
