@@ -19,7 +19,7 @@ Your photos are read from
 and the review window saves to corrections/ in the same layout.
 
 Balance: datasets give some pieces thousands of pictures and others a handful. Each round
-uses at most PHOTO_CAP camera photos and RENDER_CAP dataset renders per piece (spread over
+uses at most PHOTO_CAP camera photos and RENDER_CAP dataset renders per piece (sampling.py; spread over
 its colours, different ones every round), so every piece gets a fair share and rare photos
 (your own) are shown several times.
 """
@@ -28,22 +28,17 @@ import random
 import re
 import sys
 import time
-import zlib
 
 import torch
-from torch.utils.data import DataLoader, Dataset, Sampler
+from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms as T
 from PIL import Image, ImageOps
 
 from . import catalog, config
 from .model import MEAN, STD, LegoNet, device, eval_transform
+from .sampling import DATASET_RENDER, Balanced, split_real  # noqa: F401  (caps live there too)
 
 CHECKPOINT = config.MODEL_DIR / "training_in_progress.pt"  # progress of an unfinished training
-REAL_WEIGHT = 10   # a piece with few photos: each photo is shown up to this many times per round
-PHOTO_CAP = 200    # per piece per round: at most this many camera photos...
-RENDER_CAP = 150   # ...and this many dataset renders (Dataset_02 renders, Dataset_03 cut-outs)
-TEST_CAP = 40      # per piece: photos kept aside as the real-world test
-DATASET_RENDER = re.compile(r"^(d02_|b200_)")
 
 
 def say(*args):
@@ -90,53 +85,6 @@ class Pictures(Dataset):
             except (OSError, ValueError):
                 i = random.randrange(len(self.items))
         raise RuntimeError("Too many pictures could not be opened")
-
-
-class Balanced(Sampler):
-    """Which pictures one round uses (see 'Balance' at the top). Simulated pictures: all of them.
-    Real ones: per piece up to PHOTO_CAP photos and RENDER_CAP dataset renders, taking the colours
-    in turn so a common colour doesn't crowd out a rare one. Different ones every round, but the
-    same choice for the same round number, so a stopped training carries on exactly."""
-
-    def __init__(self, items, n_sim):
-        self.n_sim, self.epoch = n_sim, 0
-        groups = {}
-        for i in range(n_sim, len(items)):
-            path, part = items[i][0], items[i][1]
-            kind = "render" if DATASET_RENDER.match(path.name) else "photo"
-            groups.setdefault((part, kind), {}).setdefault(items[i][2], []).append(i)
-        self.groups = []
-        for (part, kind), by_colour in sorted(groups.items(), key=lambda kv: str(kv[0])):
-            n = sum(len(v) for v in by_colour.values())
-            cap = PHOTO_CAP if kind == "photo" else RENDER_CAP
-            take = min(cap, n * (REAL_WEIGHT if kind == "photo" else 1))
-            self.groups.append((list(by_colour.values()), take))
-        self.length = n_sim + sum(t for _, t in self.groups)
-
-    def set_epoch(self, epoch):
-        self.epoch = epoch
-
-    def __len__(self):
-        return self.length
-
-    def __iter__(self):
-        rng = random.Random(1000 + self.epoch)
-        chosen = list(range(self.n_sim))
-        for colours, take in self.groups:
-            pools = [rng.sample(c, len(c)) for c in colours]
-            rng.shuffle(pools)
-            got, i = [], 0
-            while len(got) < take:  # one from each colour in turn, until enough
-                more = [pool[i] for pool in pools if i < len(pool)]
-                if not more:  # every picture used: go round again (a piece with few photos)
-                    every = [x for pool in pools for x in pool]
-                    got += [every[k % len(every)] for k in range(take - len(got))]
-                    break
-                got += more[:take - len(got)]
-                i += 1
-            chosen += got
-        rng.shuffle(chosen)
-        return iter(chosen)
 
 
 def _color_of(path):
@@ -186,28 +134,6 @@ def collect(parts, log=say):
         real = [it for it in real if not it[0].name.startswith(config.SIM_PREFIX)]
         sim += from_sim
     return sim, real
-
-
-def split_real(real):
-    """Keep about 1 in 5 of your camera photos aside as a real-world test (never trained on),
-    at most TEST_CAP per piece. Only for parts with at least 3 photos, and the choice is fixed by
-    file name, so the same photos stay in the test set every time you retrain. Dataset renders
-    are never in the test: it's about real photos."""
-    by_part = {}
-    for item in real:
-        by_part.setdefault(item[1], []).append(item)
-    test, train = [], []
-    for items in by_part.values():
-        photos = [it for it in items if not DATASET_RENDER.match(it[0].name)]
-        train += [it for it in items if DATASET_RENDER.match(it[0].name)]
-        if len(photos) < 3:
-            train += photos
-            continue
-        ranked = sorted(photos, key=lambda it: zlib.crc32(it[0].name.encode()))
-        k = min(TEST_CAP, max(1, len(photos) // 5))
-        test += ranked[:k]
-        train += ranked[k:]
-    return test, train
 
 
 def evaluate(net, loader, dev):
