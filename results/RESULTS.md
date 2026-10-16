@@ -1,4 +1,4 @@
-Tested 2026-10-15 15:22 on 163 pieces (163 photos) drawn at random from a mixed tub, never seen in training. 140 of 163 pieces are parts the model knows; the part scores are on those.
+Tested 2026-10-15 15:22 on 163 pieces (163 photos), never seen in training. 140 of 163 pieces are parts the model knows; the part scores are on those.
 
 | | Right | 95% range | Pieces |
 |---|---|---|---|

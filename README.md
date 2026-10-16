@@ -25,8 +25,9 @@ Recognises LEGO parts from a camera picture and sorts them on a simulated convey
 
 ## Results
 
-Tested on 163 phone photos of different bricks from a mixed tub, labelled by hand without seeing
-the model's guesses and never used in training (`python -m bricksort.evaluate`, model v0.1.0).
+Tested on 163 phone photos of different bricks, scooped blindly from my own collection (mostly Star
+Wars and Castle, so not a sample of all LEGO), labelled by hand without seeing the model's guesses and
+never used in training (`python -m bricksort.evaluate`, model v0.1.0).
 140 of them are parts the model knows; the part and colour scores are on those.
 
 | | Right | 95% range | Pieces |

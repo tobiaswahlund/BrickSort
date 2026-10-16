@@ -136,7 +136,7 @@ def _pct(r):
 def markdown(r):
     rows = [("Part, first guess", r["part_first_guess"]), ("Part, within top 5", r["part_top5"]),
             ("Colour", r["colour"]), ("Category of parts it doesn't know", r["category_unknown_parts"])]
-    lines = [f"Tested {r['tested']} on {r['pieces']} pieces ({r['photos']} photos) drawn at random from a mixed tub, "
+    lines = [f"Tested {r['tested']} on {r['pieces']} pieces ({r['photos']} photos), "
              f"never seen in training. {r['known_pieces']} of {r['pieces']} pieces are parts the model knows; "
              "the part scores are on those.", "",
              "| | Right | 95% range | Pieces |", "|---|---|---|---|"]
