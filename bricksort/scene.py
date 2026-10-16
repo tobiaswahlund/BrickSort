@@ -285,6 +285,18 @@ class DropScene:
         target[2] = 0
         if sorter:
             elev, azim, dist = np.pi / 2, 0.0, machine_setup.camera_height() * 480 / 720   # see SORTER_CAM_DIST
+            if rng is not None:
+                # The machine's camera looks straight down, but a piece can be anywhere in its view:
+                # away from the middle it's seen a little from the side. Sometimes it's at the very edge,
+                # partly outside the picture. And no camera is mounted perfectly level.
+                half = dist * np.tan(np.radians(45 / 2))          # half the view, at the belt
+                where = rng.uniform(-0.8, 0.8, 2)
+                if rng.random() < 0.15:
+                    k = rng.integers(2)
+                    where[k] = rng.choice([-1, 1]) * rng.uniform(0.8, 1.05)
+                target[:2] -= where * half                        # the camera is above another spot
+                elev = np.pi / 2 - np.radians(abs(rng.normal(0, 2)))
+                azim = rng.uniform(0, 2 * np.pi)
             rng = None
         elif rng is None:
             elev, azim, dist = np.pi / 2, 0.0, self.cam_h
