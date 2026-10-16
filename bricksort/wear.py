@@ -27,7 +27,7 @@ WEAR_LEVELS = {
     "medium":   dict(p=0.17, scratches=(10, 30), dust=(25, 80), dents=(1, 3), dull=(0.2, 0.45)),
 }
 YELLOWING = 0.25       # share of white / light grey / blue pieces that are a bit yellowed
-DENT_RADIUS = (0.06, 0.15)  # in studs (a stud is 8 mm): about 0.5 to 1.2 mm across
+DENT_RADIUS = (0.06, 0.15)  # in studs (a stud is 8 mm): a radius of about 0.5 to 1.2 mm
 DENT_DEPTH = (0.01, 0.03)   # in studs: about 0.1 to 0.25 mm deep, like a tooth mark
 TEXTURE_BASE = 0.92    # the plastic colour is divided by this so scratches can be a little lighter
 
