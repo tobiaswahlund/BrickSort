@@ -17,6 +17,7 @@ from . import machine_setup, messy, surfaces
 from . import wear as wear_mod
 
 CAM_RES = 480
+SUPERSAMPLE = 2   # drawn at 2x and averaged down: smooth edges and shadows instead of pixel steps
 N_LIGHTS = 5
 # The sorting machine's camera: 720 px across 2*2.1*tan(22.5 deg) units. Our camera is CAM_RES px with
 # the same 45 deg view, so this distance gives the same pixels per mm (pieces look just as small).
@@ -89,8 +90,8 @@ class DropScene:
 <mujoco>
   <option timestep="0.002" gravity="0 0 -9.81"/>
   <visual>
-    <global offwidth="{CAM_RES}" offheight="{CAM_RES}"/>
-    <quality shadowsize="2048"/>
+    <global offwidth="{CAM_RES * SUPERSAMPLE}" offheight="{CAM_RES * SUPERSAMPLE}"/>
+    <quality shadowsize="8192"/>
     <headlight ambient="0.3 0.3 0.3" diffuse="0.3 0.3 0.3" specular="0 0 0"/>
     <map znear="0.01"/>
   </visual>
@@ -134,7 +135,7 @@ class DropScene:
         self.surface_mats = [mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_MATERIAL, f"s_{n}")
                              for n in surfaces.SURFACES]
         self.all_geoms[0] = self.part_geom
-        self.renderer = mujoco.Renderer(self.model, CAM_RES, CAM_RES)
+        self.renderer = mujoco.Renderer(self.model, CAM_RES * SUPERSAMPLE, CAM_RES * SUPERSAMPLE)
         self.cam_h = cam_h
         self.rng = None
 
@@ -160,6 +161,8 @@ class DropScene:
         # Surface: table tops, dark grey belt, stone floors... (the part casts its shadow on it)
         m.geom_matid[self.floor] = self.surface_mats[rng.integers(len(self.surface_mats))]
         # Lamps: 1 to 5, warm-yellowish to white, at different heights, sides and distances
+        m.light_cutoff[:] = 75                      # wide, soft cones; the 3 strongest cast shadows
+        m.light_castshadow[:] = np.arange(N_LIGHTS) < 3
         n_on = int(rng.integers(1, N_LIGHTS + 1))
         total = rng.uniform(0.75, 1.05)                # overall brightness: never very dark or blown out
         share = rng.dirichlet(np.ones(n_on) * 2)      # how the light is shared between the lamps
@@ -211,6 +214,11 @@ class DropScene:
             m.light_dir[i] = -pos / np.linalg.norm(pos)
             m.light_diffuse[i] = np.clip(colour * power, 0, 1)
             m.light_specular[i] = 0.55 / len(lamps)   # the lamps share one shine, however many there are
+            # a narrower cone (still lighting the whole picture) gives sharper shadows. Only the middle
+            # lamp casts one: a row of LEDs gives one soft shadow, while several lamps here would each
+            # cast a hard copy (MuJoCo can't soften them), which looks stripy
+            m.light_cutoff[i] = 40
+            m.light_castshadow[i] = i == len(lamps) // 2
         m.vis.headlight.ambient[:] = rng.uniform(0.27, 0.33)
         m.vis.headlight.diffuse[:] = 0
         m.mat_specular[self.plastic] = rng.uniform(0.3, 0.45) * (1 - self.dull)
@@ -264,7 +272,7 @@ class DropScene:
 
     def render(self, camera="top"):
         self.renderer.update_scene(self.data, camera=camera)
-        return self.renderer.render().copy()
+        return _shrink(self.renderer.render())
 
     def _aim_camera(self, rng, sorter=False):
         """Point the camera at the part. With rng: a random tilt like a hand-held phone photo.
@@ -306,14 +314,23 @@ class DropScene:
         if sorter:
             rng = None
         self.renderer.update_scene(self.data, camera="top")
-        full = self.renderer.render().copy()
+        full = _shrink(self.renderer.render())
         self.renderer.enable_segmentation_rendering()
         seg = self.renderer.render()
         self.renderer.disable_segmentation_rendering()
         mask = np.isin(seg[:, :, 0], self.all_geoms) & (seg[:, :, 1] == int(mujoco.mjtObj.mjOBJ_GEOM))
+        mask = _shrink(mask[..., None].astype(np.float32))[..., 0] >= 0.5
         if rng is not None:
             full = messy.photo_effects(full, mask, rng)
         return full, crop_to_mask(full, mask, size, margin)
+
+
+def _shrink(img):
+    """Average SUPERSAMPLE x SUPERSAMPLE blocks: the picture at CAM_RES, with smooth edges."""
+    s = SUPERSAMPLE
+    h, w = img.shape[0] // s, img.shape[1] // s
+    out = img[:h * s, :w * s].reshape(h, s, w, s, -1).astype(np.float32).mean((1, 3))
+    return out.round().astype(img.dtype) if img.dtype == np.uint8 else out
 
 
 def crop_to_mask(img, mask, size=224, margin=0.12):
