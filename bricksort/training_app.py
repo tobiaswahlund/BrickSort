@@ -2,9 +2,10 @@
 
 Run:  python -m bricksort.training_app   (or double-click "Model training.bat")
 
-Start runs two steps, each in its own background process so the window stays usable:
+Start runs these steps, each in its own background process so the window stays usable:
   1. python -m bricksort.render <pictures per part>   (only makes pictures that are missing)
-  2. python -m bricksort.train <rounds>               (saves its progress after every round)
+  2. python -m bricksort.render categories 10         (the parts learned by category only, same)
+  3. python -m bricksort.train <rounds>               (saves its progress after every round)
 Pause stops the running step. Start again carries on: pictures already made are kept, and a stopped
 training continues from the last finished round. The right side shows the training pictures
 (the ones being made now, or all of them) so you can check they look right.
@@ -447,6 +448,8 @@ class TrainingApp(tk.Tk):
         steps = []
         if self.make_pictures.get():
             steps.append(("Making training pictures", ["-m", "bricksort.render", str(per_part)]))
+            # the parts learned by category only (deleted too by "Make all training pictures again")
+            steps.append(("Making category pictures", ["-m", "bricksort.render", "categories", "10"]))
         steps.append(("Training", ["-m", "bricksort.train", str(rounds)]))
         self.running = True
         self.start_btn.configure(state="disabled")
