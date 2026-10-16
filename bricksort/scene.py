@@ -44,10 +44,11 @@ def _fmt(arr):
 
 
 class DropScene:
-    def __init__(self, verts, faces, wear_texture=None, texcoord=None, others=()):
+    def __init__(self, verts, faces, wear_texture=None, texcoord=None, others=(), normals=None):
         """wear_texture + texcoord: a picture of scratches/dust wrapped on the piece (see wear.py).
         others: extra pieces [(verts, faces, "stuck" | "loose")] for 'several pieces' pictures:
-        stuck = clicked onto the main piece, loose = dropped right next to it."""
+        stuck = clicked onto the main piece, loose = dropped right next to it.
+        normals: a direction per vertex for smooth shading (see wear.shading); None: MuJoCo's own."""
         self.texture_base = wear_mod.TEXTURE_BASE if wear_texture else 1.0
         self.dull = 0.0   # 0 = glossy new plastic, higher = worn and less shiny
         wear_asset = ""
@@ -57,6 +58,8 @@ class DropScene:
             wear_asset = f'<texture name="wear" type="2d" file="{str(wear_texture).replace(chr(92), "/")}"/>'
             mesh_tex = f' texcoord="{_fmt(texcoord)}"'
             plastic_tex = ' texture="wear"'
+        if normals is not None:
+            mesh_tex += f' normal="{_fmt(normals)}"'
         extent = verts.max(0) - verts.min(0)
         self.radius = float(np.linalg.norm(extent) / 2)
         self.others = [(v, f, mode, float(np.linalg.norm(v.max(0) - v.min(0)) / 2)) for v, f, mode in others]

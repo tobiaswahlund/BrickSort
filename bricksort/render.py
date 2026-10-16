@@ -138,10 +138,10 @@ def worn_scene(verts, faces, rng, tex_path):
     """A DropScene of this part with its own random wear: dents in the shape, scratches/dust texture."""
     level = wear.pick_level(rng)
     lo, hi = wear.WEAR_LEVELS[level]["dents"]
-    v, f = wear.subdivide(verts, faces)
-    v = wear.dent(v, f, rng, int(rng.integers(lo, hi + 1)))
+    v, f = wear.dents(verts, faces, rng, int(rng.integers(lo, hi + 1)))
+    v, f, n = wear.shading(v, f)
     wear.texture(rng, level, tex_path)
-    scene = DropScene(v, f, wear_texture=tex_path, texcoord=wear.texcoords(v, f))
+    scene = DropScene(v, f, wear_texture=tex_path, texcoord=wear.texcoords(v, n), normals=n)
     scene.dull = wear.dullness(level, rng)
     return scene
 

@@ -43,54 +43,119 @@ def _normals(verts, faces):
     return n / (np.linalg.norm(n, axis=1, keepdims=True) + 1e-12)
 
 
-def subdivide(verts, faces, max_edge=STUD / 3, rounds=3):
-    """Split big triangles so a dent in a flat face has points to push in."""
-    verts = list(map(tuple, verts))
+def subdivide(verts, faces, max_edge=STUD / 3, rounds=3, near=None):
+    """Split big triangles so a dent in a flat face has points to push in (near(point) -> bool: only
+    edges whose middle is there; None: everywhere).
+
+    Each long edge is split in the middle, and every triangle using that edge is split along with
+    it (into 2, 3 or 4), so no corner ever sits in the middle of a neighbour's edge. Such a corner
+    (a "T-junction") breaks the smooth shading of curved surfaces into stripes."""
+    V = [np.asarray(v, float) for v in verts]
+    index = {tuple(v): i for i, v in enumerate(V)}
+    faces = [tuple(f) for f in np.asarray(faces)]
+
+    def mid(p, q, mids):
+        key = (min(p, q), max(p, q))
+        if key not in mids:
+            m = (V[p] + V[q]) / 2
+            mids[key] = index.setdefault(tuple(m), len(V))
+            if mids[key] == len(V):
+                V.append(m)
+        return mids[key]
+
     for _ in range(rounds):
-        index = {v: i for i, v in enumerate(verts)}
-        new_faces, changed = [], False
-        V = np.array(verts)
+        mids, out, changed = {}, [], False
         for a, b, c in faces:
-            edges = [np.linalg.norm(V[a] - V[b]), np.linalg.norm(V[b] - V[c]), np.linalg.norm(V[c] - V[a])]
-            if max(edges) <= max_edge:
-                new_faces.append((a, b, c))
+            long = [np.linalg.norm(V[p] - V[q]) > max_edge and (near is None or near((V[p] + V[q]) / 2))
+                    for p, q in ((a, b), (b, c), (c, a))]
+            k = sum(long)
+            if k == 0:
+                out.append((a, b, c))
                 continue
             changed = True
-            mids = []
-            for p, q in ((a, b), (b, c), (c, a)):
-                m = tuple((V[p] + V[q]) / 2)
-                if m not in index:
-                    index[m] = len(verts)
-                    verts.append(m)
-                mids.append(index[m])
-            ab, bc, ca = mids
-            new_faces += [(a, ab, ca), (ab, b, bc), (ca, bc, c), (ab, bc, ca)]
-        faces = np.array(new_faces)
+            # turn the triangle so its long edges come first: (a,b) long, then (b,c), then (c,a)
+            while not long[0] or (k == 2 and not long[1]):
+                a, b, c = b, c, a
+                long = long[1:] + long[:1]
+            if k == 1:
+                ab = mid(a, b, mids)
+                out += [(a, ab, c), (ab, b, c)]
+            elif k == 2:
+                ab, bc = mid(a, b, mids), mid(b, c, mids)
+                out += [(ab, b, bc), (a, ab, bc), (a, bc, c)]
+            else:
+                ab, bc, ca = mid(a, b, mids), mid(b, c, mids), mid(c, a, mids)
+                out += [(a, ab, ca), (ab, b, bc), (ca, bc, c), (ab, bc, ca)]
+        faces = out
         if not changed or len(faces) > 120000:
             break
-    return np.array(verts), np.asarray(faces, np.int32)
+    return np.array(V), np.asarray(faces, np.int32)
 
 
-def dent(verts, faces, rng, count):
-    """Press `count` small dents (like tooth or impact marks) into the shape."""
+def dents(verts, faces, rng, count):
+    """Press `count` small dents (like tooth or impact marks) into the shape: (verts, faces).
+    Only the surface around each dent is split into small triangles, so the rest of the piece keeps
+    its own smooth shading."""
     if count <= 0:
-        return verts
-    verts = verts.copy()
-    normals = _normals(verts, faces)
-    for _ in range(count):
-        c = rng.integers(len(verts))
-        radius = rng.uniform(0.12, 0.3) * STUD
-        depth = rng.uniform(0.04, 0.12) * STUD
-        d = np.linalg.norm(verts - verts[c], axis=1)
-        near = d < radius
-        verts[near] -= normals[c] * (depth * (1 - (d[near] / radius) ** 2))[:, None]
-    return verts
+        return verts, faces
+    fn = np.cross(verts[faces[:, 1]] - verts[faces[:, 0]], verts[faces[:, 2]] - verts[faces[:, 0]])
+    area = np.linalg.norm(fn, axis=1)
+    picks = rng.choice(len(faces), size=count, p=area / area.sum())
+    marks = []
+    for k in picks:   # a random point on a face (bigger faces are hit more often), pushed in along it
+        w = rng.dirichlet(np.ones(3))
+        marks.append((w @ verts[faces[k]], fn[k] / (area[k] + 1e-12),
+                      rng.uniform(0.12, 0.3) * STUD, rng.uniform(0.04, 0.12) * STUD))
+    reach = STUD / 3
+    v, f = subdivide(verts, faces, near=lambda p: any(np.linalg.norm(p - c) < r + reach for c, _, r, _ in marks))
+    v = v.copy()
+    for c, n, radius, depth in marks:
+        d = np.linalg.norm(v - c, axis=1)
+        hit = d < radius
+        v[hit] -= n * (depth * (1 - (d[hit] / radius) ** 2))[:, None]
+    return v, f
 
 
-def texcoords(verts, faces):
+def shading(verts, faces, crease=35):
+    """(verts, faces, normals) for smooth shading: round surfaces shade smoothly, while edges sharper
+    than `crease` degrees stay sharp. A corner shared by faces on both sides of a sharp edge gets one
+    copy per side, each with its own direction, so a box's edges don't shade darker."""
+    fn = np.cross(verts[faces[:, 1]] - verts[faces[:, 0]], verts[faces[:, 2]] - verts[faces[:, 0]])
+    unit = fn / (np.linalg.norm(fn, axis=1, keepdims=True) + 1e-12)
+    # each face counts by its angle at the corner, so how a side was cut into triangles doesn't matter
+    angle = np.zeros(faces.shape)
+    for c in range(3):
+        e1 = verts[faces[:, (c + 1) % 3]] - verts[faces[:, c]]
+        e2 = verts[faces[:, (c + 2) % 3]] - verts[faces[:, c]]
+        cosang = (e1 * e2).sum(1) / (np.linalg.norm(e1, axis=1) * np.linalg.norm(e2, axis=1) + 1e-12)
+        angle[:, c] = np.arccos(np.clip(cosang, -1, 1))
+    cos = np.cos(np.radians(crease))
+    by_vertex = [[] for _ in range(len(verts))]
+    for k, face in enumerate(faces):
+        for corner, v in enumerate(face):
+            by_vertex[v].append((k, corner))
+    new_verts, normals, new_faces = [], [], faces.copy()
+    for v, uses in enumerate(by_vertex):
+        groups = []   # faces around this corner that meet at a gentle angle: [summed normal, uses]
+        for k, corner in uses:
+            for g in groups:
+                if unit[k] @ (g[0] / (np.linalg.norm(g[0]) + 1e-12)) >= cos:
+                    g[0] = g[0] + unit[k] * angle[k, corner]
+                    g[1].append((k, corner))
+                    break
+            else:
+                groups.append([unit[k] * angle[k, corner], [(k, corner)]])
+        for total, members in groups:
+            for k, corner in members:
+                new_faces[k, corner] = len(new_verts)
+            new_verts.append(verts[v])
+            normals.append(total / (np.linalg.norm(total) + 1e-12))
+    return np.array(new_verts), new_faces, np.array(normals)
+
+
+def texcoords(verts, normals):
     """Wrap the texture around the piece like a box (each point uses its main facing direction)."""
-    n = _normals(verts, faces)
-    axis = np.abs(n).argmax(1)
+    axis = np.abs(normals).argmax(1)
     uv = np.empty((len(verts), 2))
     for a, (i, j) in enumerate(((1, 2), (0, 2), (0, 1))):
         sel = axis == a
