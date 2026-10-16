@@ -88,13 +88,21 @@ def camera_height():
 
 def lamps(spread=1.2, rng=None):
     """[(position (x, y, z), brightness, colour rgb)] of the lamps; spread: how far apart along the belt.
-    With rng, a little variety (for training pictures)."""
+    With rng, variety for training pictures: overall brightness, how long the row of lamps is, and the
+    light's colour, leaning towards your setting's white (now and then a cooler or warmer white,
+    like different LED strips or daylight from a window)."""
     s = load()
     n = int(s["lamps"])
-    xs = np.linspace(-spread, spread, n) if n > 1 else np.zeros(1)
-    each = 1.11 * s["brightness"] / n          # the built-in three lamps give 1.11 together
     w = s["warmth"]
-    colour = np.array([1.0, 1.0 - 0.07 * w, 1.0 - 0.22 * w])
+    bright = s["brightness"]
+    if rng is not None:
+        spread *= rng.uniform(0.7, 1.3)
+        bright *= rng.uniform(0.7, 1.3)
+        w = float(np.clip(w + rng.normal(0, 0.06) + rng.exponential(0.08), -0.2, 1.0))   # mostly near white
+    xs = np.linspace(-spread, spread, n) if n > 1 else np.zeros(1)
+    each = 1.11 * bright / n                   # the built-in three lamps give 1.11 together
+    colour = np.array([1.0, 1.0 - 0.07 * w, 1.0 - 0.22 * w])   # below 0: a cool, slightly blue white
+    colour = colour / colour.max()
     out = []
     for x in xs:
         pos = np.array([x, -s["lamp_side_mm"] / 100, s["lamp_height_mm"] / 100])

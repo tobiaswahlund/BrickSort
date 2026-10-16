@@ -210,7 +210,7 @@ class DropScene:
             m.light_pos[i] = pos
             m.light_dir[i] = -pos / np.linalg.norm(pos)
             m.light_diffuse[i] = np.clip(colour * power, 0, 1)
-            m.light_specular[i] = 0.3
+            m.light_specular[i] = 0.55 / len(lamps)   # the lamps share one shine, however many there are
         m.vis.headlight.ambient[:] = rng.uniform(0.27, 0.33)
         m.vis.headlight.diffuse[:] = 0
         m.mat_specular[self.plastic] = rng.uniform(0.3, 0.45) * (1 - self.dull)
