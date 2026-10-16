@@ -27,6 +27,8 @@ WEAR_LEVELS = {
     "medium":   dict(p=0.17, scratches=(10, 30), dust=(25, 80), dents=(1, 3), dull=(0.2, 0.45)),
 }
 YELLOWING = 0.25       # share of white / light grey / blue pieces that are a bit yellowed
+DENT_RADIUS = (0.06, 0.15)  # in studs (a stud is 8 mm): about 0.5 to 1.2 mm across
+DENT_DEPTH = (0.01, 0.03)   # in studs: about 0.1 to 0.25 mm deep, like a tooth mark
 TEXTURE_BASE = 0.92    # the plastic colour is divided by this so scratches can be a little lighter
 
 
@@ -105,7 +107,7 @@ def dents(verts, faces, rng, count):
     for k in picks:   # a random point on a face (bigger faces are hit more often), pushed in along it
         w = rng.dirichlet(np.ones(3))
         marks.append((w @ verts[faces[k]], fn[k] / (area[k] + 1e-12),
-                      rng.uniform(0.12, 0.3) * STUD, rng.uniform(0.04, 0.12) * STUD))
+                      rng.uniform(*DENT_RADIUS) * STUD, rng.uniform(*DENT_DEPTH) * STUD))
     reach = STUD / 3
     v, f = subdivide(verts, faces, near=lambda p: any(np.linalg.norm(p - c) < r + reach for c, _, r, _ in marks))
     v = v.copy()
