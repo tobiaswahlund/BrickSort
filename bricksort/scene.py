@@ -287,14 +287,12 @@ class DropScene:
             elev, azim, dist = np.pi / 2, 0.0, machine_setup.camera_height() * 480 / 720   # see SORTER_CAM_DIST
             if rng is not None:
                 # The machine's camera looks straight down, but a piece can be anywhere in its view:
-                # away from the middle it's seen a little from the side. Sometimes it's at the very edge,
-                # partly outside the picture. And no camera is mounted perfectly level.
+                # away from the middle it's seen a little from the side. It always stays fully in the
+                # picture (snapshot checks). And no camera is mounted perfectly level.
                 half = dist * np.tan(np.radians(45 / 2))          # half the view, at the belt
-                where = rng.uniform(-0.8, 0.8, 2)
-                if rng.random() < 0.15:
-                    k = rng.integers(2)
-                    where[k] = rng.choice([-1, 1]) * rng.uniform(0.8, 1.05)
-                target[:2] -= where * half                        # the camera is above another spot
+                room = max(0.0, half - 1.3 * self.radius)         # how far the middle can be off centre
+                target[:2] -= rng.uniform(-room, room, 2)         # the camera is above another spot
+                self._fits = room > 0
                 elev = np.pi / 2 - np.radians(abs(rng.normal(0, 2)))
                 azim = rng.uniform(0, 2 * np.pi)
             rng = None
@@ -335,6 +333,9 @@ class DropScene:
         self.renderer.disable_segmentation_rendering()
         mask = np.isin(seg[:, :, 0], self.all_geoms) & (seg[:, :, 1] == int(mujoco.mjtObj.mjOBJ_GEOM))
         mask = _shrink(mask[..., None].astype(np.float32))[..., 0] >= 0.5
+        edge = mask[0].any() or mask[-1].any() or mask[:, 0].any() or mask[:, -1].any()
+        if sorter and edge and getattr(self, "_fits", False):
+            return full, None   # touches the edge of the picture: not used (the caller tries again)
         if rng is not None:
             full = messy.photo_effects(full, mask, rng)
         return full, crop_to_mask(full, mask, size, margin)
