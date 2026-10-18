@@ -50,5 +50,6 @@ if not exist "%PROJECT%\model\lego_model.pt" (
 )
 
 echo.
-echo All set! Double-click "Start demo.bat" or "Start sorting machine.bat".
+"%PY%" -m bricksort.app --shortcut
+echo All set! Double-click BrickSort in the project folder (or scripts\windows\BrickSort.bat).
 pause

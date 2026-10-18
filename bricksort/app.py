@@ -132,7 +132,27 @@ class App(tk.Tk):
         threading.Thread(target=run, daemon=True).start()
 
 
+def make_shortcut():
+    """BrickSort.lnk in the project folder: opens this menu, and shows the logo in File Explorer
+    (a .bat file always shows Windows' own icon, a shortcut can have any). Made by setup.bat; it
+    holds this computer's paths, so it stays out of git."""
+    if sys.platform != "win32":
+        return
+    pythonw = sys.executable.replace("python.exe", "pythonw.exe")
+    link = config.PROJECT_DIR / "BrickSort.lnk"
+    script = (f"$s = (New-Object -ComObject WScript.Shell).CreateShortcut('{link}'); "
+              f"$s.TargetPath = '{pythonw}'; $s.Arguments = '-m bricksort.app'; "
+              f"$s.WorkingDirectory = '{config.PROJECT_DIR}'; $s.IconLocation = '{ASSETS / 'logo.ico'}'; "
+              "$s.Description = 'BrickSort'; $s.Save()")
+    subprocess.run(["powershell", "-NoProfile", "-Command", script], check=True,
+                   creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    print("Made", link)
+
+
 def run():
+    if "--shortcut" in sys.argv:
+        make_shortcut()
+        return
     App().mainloop()
 
 
