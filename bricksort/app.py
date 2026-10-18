@@ -221,7 +221,7 @@ class App(tk.Tk):
 
     def destroy(self):
         if self.helper is not None and self.helper.poll() is None:
-            self.helper.kill()   # it was only waiting
+            self.helper.stdin.close()   # it was only waiting: with nothing more to read, it ends
         super().destroy()
 
     def quit_app(self):
