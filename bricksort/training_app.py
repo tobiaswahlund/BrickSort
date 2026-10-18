@@ -24,7 +24,7 @@ from tkinter import filedialog, messagebox, ttk
 from PIL import ImageTk
 
 from . import belts, config, machine_setup
-from .ui import MUTED, make_copyable
+from .ui import MUTED, make_copyable, use_logo
 from .watch import TrainingPictures
 
 CHECKPOINT = config.MODEL_DIR / "training_in_progress.pt"   # same file as train.CHECKPOINT
@@ -48,6 +48,7 @@ def _minutes(seconds):
 class TrainingApp(tk.Tk):
     def __init__(self):
         super().__init__()
+        use_logo(self)
         self.title("BrickSort – model training")
         self.configure(padx=10, pady=10)
         self.proc, self.running, self.queue = None, False, queue.Queue()

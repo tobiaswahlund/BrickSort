@@ -5,7 +5,9 @@ mouse and copied (Ctrl+C, or right-click > Copy). Labels that only show a
 picture stay ordinary labels.
 """
 import math
+import sys
 import tkinter as tk
+from pathlib import Path
 from tkinter import font as tkfont
 from tkinter import ttk
 
@@ -13,6 +15,20 @@ from PIL import Image, ImageTk
 
 HEADING = ("Segoe UI", 10, "bold")
 MUTED = "#666"
+ASSETS = Path(__file__).resolve().parent / "assets"
+
+
+def use_logo(root):
+    """BrickSort's logo as the window and taskbar icon of this program (instead of Tk's feather)."""
+    try:
+        if sys.platform == "win32":
+            import ctypes  # its own taskbar button, not grouped under Python's
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("BrickSort")
+            root.iconbitmap(default=str(ASSETS / "logo.ico"))   # every window of this program
+        root._logo = tk.PhotoImage(file=str(ASSETS / "logo.png"))
+        root.iconphoto(True, root._logo)
+    except (tk.TclError, OSError, AttributeError):
+        pass   # no logo is no reason not to start
 
 
 class ImageBox(ttk.Frame):

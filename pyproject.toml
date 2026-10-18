@@ -21,6 +21,7 @@ dependencies = [
 ]
 
 [project.gui-scripts]
+bricksort-app = "bricksort.app:run"
 bricksort-demo = "bricksort.demo:run"
 bricksort-sorter = "bricksort.conveyor_demo:run"
 bricksort-training = "bricksort.training_app:run"

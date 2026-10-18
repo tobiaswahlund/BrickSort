@@ -20,7 +20,7 @@ from tkinter import ttk
 from PIL import Image, ImageTk
 
 from . import config
-from .ui import MUTED, ImageBox
+from .ui import MUTED, ImageBox, use_logo
 
 SIZE = 150
 LIVE, ALL = "Being made now", "All training pictures"
@@ -300,6 +300,7 @@ class Watch(tk.Tk):
 
     def __init__(self):
         super().__init__()
+        use_logo(self)
         self.title("BrickSort – training pictures")
         self.configure(padx=8, pady=8)
         self.view = TrainingPictures(self)

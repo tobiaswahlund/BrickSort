@@ -32,7 +32,7 @@ from .sorter.conveyor import (
 )
 from .sorter.machine import Machine
 from .sorter.piece_picker import PiecePicker, load_choice
-from .ui import ImageBox, Label, make_copyable
+from .ui import ImageBox, Label, make_copyable, use_logo
 from .viewer import PartViewer
 
 
@@ -46,6 +46,7 @@ def tkimg(img, w, h=None):
 class ConveyorDemo(tk.Tk):
     def __init__(self):
         super().__init__()
+        use_logo(self)
         self.title("BrickSort – sorting machine (simulation)")
         self.configure(padx=10, pady=10)
         self.lib = Library()

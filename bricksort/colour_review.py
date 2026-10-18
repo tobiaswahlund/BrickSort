@@ -26,7 +26,7 @@ from PIL import Image, ImageTk
 from . import catalog, config
 from .cut import autocomplete, wide_dropdown
 from .render import real_colors
-from .ui import Label
+from .ui import Label, use_logo
 
 SOURCE = config.PROJECT_DIR / "_check" / "dataset_01_colours"
 STATE = SOURCE / "_review_progress.json"
@@ -49,6 +49,7 @@ def _candidates(folder_name):
 class ColourReview(tk.Tk):
     def __init__(self):
         super().__init__()
+        use_logo(self)
         self.title("BrickSort – check colours")
         self.configure(padx=8, pady=8)
         self.geometry("1150x860")

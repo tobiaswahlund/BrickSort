@@ -23,7 +23,7 @@ from .model import Prediction
 from .render import real_colors
 from .scene import DropScene
 from .train import load_square, photos_in
-from .ui import MUTED, ImageBox, Label, make_copyable
+from .ui import MUTED, ImageBox, Label, make_copyable, use_logo
 from .viewer import PartViewer
 
 VIEW = 420  # size of the big 3D view on screen
@@ -59,6 +59,7 @@ def reference_photo(part_id, size):
 class Demo(tk.Tk):
     def __init__(self):
         super().__init__()
+        use_logo(self)
         self.title("BrickSort – virtual demo")
         self.configure(padx=10, pady=10)
         self.lib = Library()

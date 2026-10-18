@@ -28,7 +28,7 @@ from PIL import Image, ImageOps, ImageTk
 
 from . import catalog, config, custom
 from .sorter.detector import Detector
-from .ui import Label
+from .ui import Label, use_logo
 
 TO_CUT = config.MY_PHOTOS / "_to_cut"
 TO_CUT_TEST = config.MY_PHOTOS / "_to_cut_test"   # photos for the honest test (python -m bricksort.cut --test)
@@ -216,6 +216,7 @@ class Cutter(tk.Tk):
 
     def __init__(self, test=False):
         super().__init__()
+        use_logo(self)
         self.test = test
         self.to_cut = TO_CUT_TEST if test else TO_CUT
         self.title("BrickSort – cut out TEST pieces (blind: no guesses shown)" if test else "BrickSort – cut out pieces")
