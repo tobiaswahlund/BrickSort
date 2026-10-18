@@ -21,19 +21,27 @@ ASSETS = Path(__file__).resolve().parent / "assets"
 
 
 # Opened from the BrickSort menu: this program's window is shown inside the menu's window
-# (BRICKSORT_INSIDE holds the id of the frame to show it in). Taken out of the environment straight
-# away, so a program this one opens gets a window of its own.
+# (BRICKSORT_INSIDE holds the id of the frame to show it in, or the menu calls show_inside). Taken out
+# of the environment straight away, so a program this one opens gets a window of its own.
 _INSIDE = os.environ.pop("BRICKSORT_INSIDE", None)
-if _INSIDE:
-    _tk_init = tk.Tk.__init__
+_tk_init = tk.Tk.__init__
 
-    def _init_inside(self, *args, **kw):
-        global _INSIDE
-        if _INSIDE:
-            kw.setdefault("use", _INSIDE)
-            _INSIDE = None   # only the first window goes inside the menu
-        _tk_init(self, *args, **kw)
-    tk.Tk.__init__ = _init_inside
+
+def _init_inside(self, *args, **kw):
+    global _INSIDE
+    if _INSIDE:
+        kw.setdefault("use", _INSIDE)
+        _INSIDE = None   # only the first window goes inside the menu
+    _tk_init(self, *args, **kw)
+
+
+tk.Tk.__init__ = _init_inside
+
+
+def show_inside(window_id):
+    """The next main window this program makes is shown inside that window (the menu's)."""
+    global _INSIDE
+    _INSIDE = window_id
 
 
 def _listen_to_menu(root):

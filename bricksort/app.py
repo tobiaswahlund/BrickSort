@@ -6,7 +6,12 @@ Pick something in the menu and it opens in this same window, with "◀ Menu" at 
 back. Each part still runs as its own program (so a heavy one can't freeze the menu, and its
 memory is given back when you leave it); it's only shown inside this window (ui.py: BRICKSORT_INSIDE).
 "◀ Menu" closes it the way its own close button would, so it saves first, or asks.
+
+To open quickly, a helper program waits in the background with everything loaded (PyTorch, MuJoCo
+and every part's code: that's most of the waiting), and becomes whatever you pick next. A new
+helper is got ready when you're back in the menu.
 """
+import importlib
 import os
 import subprocess
 import sys
@@ -18,7 +23,7 @@ from tkinter import messagebox, ttk
 from PIL import Image, ImageTk
 
 from . import config
-from .ui import ASSETS, MUTED, make_copyable, use_logo
+from .ui import ASSETS, MUTED, make_copyable, show_inside, use_logo
 
 # (section, [(button, module and arguments, what it does)])
 TOOLS = [
@@ -72,6 +77,7 @@ class App(tk.Tk):
         self.bar_note.pack(side="left", padx=12)
 
         self.menu = self._make_menu()
+        self.helper = None         # a program waiting with everything loaded (see warm_helper)
         self.show_menu()
 
     # ------------------------------------------------------------------ the menu
@@ -126,6 +132,7 @@ class App(tk.Tk):
 
     def show_menu(self):
         self._show(self.menu)
+        self.after(1500, self._get_helper_ready)
         self.back_btn.configure(state="normal")
         self.bar_note.configure(text="")
         if self.menu_size:   # back to the size the menu had
@@ -153,10 +160,16 @@ class App(tk.Tk):
         log = open(LOG, "a", encoding="utf-8")
         log.write(f"\n--- {time.strftime('%Y-%m-%d %H:%M')} {name}\n")
         log.flush()
-        self.child = subprocess.Popen(
-            [sys.executable, "-m", *args], cwd=config.PROJECT_DIR, stdin=subprocess.PIPE,
-            stdout=log, stderr=log, text=True, creationflags=NO_WINDOW,
-            env={**os.environ, "BRICKSORT_INSIDE": hex(holder.winfo_id()), "PYTHONIOENCODING": "utf-8"})
+        helper, self.helper = self.helper, None
+        if helper is not None and helper.poll() is None:   # the helper becomes this program
+            helper.stdin.write(" ".join(["run", hex(holder.winfo_id()), *args]) + "\n")
+            helper.stdin.flush()
+            self.child = helper
+        else:
+            self.child = subprocess.Popen(
+                [sys.executable, "-m", *args], cwd=config.PROJECT_DIR, stdin=subprocess.PIPE,
+                stdout=log, stderr=log, text=True, creationflags=NO_WINDOW,
+                env={**os.environ, "BRICKSORT_INSIDE": hex(holder.winfo_id()), "PYTHONIOENCODING": "utf-8"})
         log.close()
         self.child_name = name
         self.bar_note.configure(text="Opening … (it can take a few seconds)")
@@ -195,6 +208,21 @@ class App(tk.Tk):
             return
         self.bar_note.configure(text="Closing …")
         self._ask_child_to_close()   # it saves, or asks first (and may stay open); _watch_child sees it go
+
+    def _get_helper_ready(self):
+        if self.child is not None or (self.helper is not None and self.helper.poll() is None):
+            return
+        LOG.parent.mkdir(parents=True, exist_ok=True)
+        with open(LOG, "a", encoding="utf-8") as log:
+            self.helper = subprocess.Popen(
+                [sys.executable, "-m", "bricksort.app", "--helper"], cwd=config.PROJECT_DIR, stdin=subprocess.PIPE,
+                stdout=log, stderr=log, text=True, creationflags=NO_WINDOW,
+                env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+
+    def destroy(self):
+        if self.helper is not None and self.helper.poll() is None:
+            self.helper.kill()   # it was only waiting
+        super().destroy()
 
     def quit_app(self):
         if self.child is None:
@@ -269,9 +297,24 @@ def make_shortcut():
     print("Made", link)
 
 
+def warm_helper():
+    """(--helper) Load everything the parts need, then wait for the menu to say which part to be:
+    "run <window id> <module> [arguments]". Becomes that part, shown inside the menu's window."""
+    from . import colour_review, conveyor_demo, cut, demo, training_app  # noqa: F401  (the slow part)
+    line = sys.stdin.readline().split()
+    if len(line) < 3 or line[0] != "run":
+        return   # the menu closed
+    show_inside(line[1])
+    sys.argv = [line[2], *line[3:]]
+    importlib.import_module(line[2]).run()   # every part starts with run(), reading sys.argv
+
+
 def run():
     if "--shortcut" in sys.argv:
         make_shortcut()
+        return
+    if "--helper" in sys.argv:
+        warm_helper()
         return
     App().mainloop()
 
