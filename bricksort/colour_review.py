@@ -17,6 +17,7 @@ import copy
 import json
 import random
 import shutil
+import threading
 import tkinter as tk
 from pathlib import Path
 from tkinter import messagebox, ttk
@@ -46,6 +47,12 @@ def _candidates(folder_name):
     return [folder_name]
 
 
+def _small(path):
+    img = Image.open(path).convert("RGB")
+    img.thumbnail((THUMB, THUMB))
+    return img
+
+
 class ColourReview(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -59,6 +66,9 @@ class ColourReview(tk.Tk):
         self.parts = sorted(p.name for p in SOURCE.iterdir() if p.is_dir()) if SOURCE.exists() else []
         self.state = json.loads(STATE.read_text(encoding="utf-8")) if STATE.exists() else {}
         self.thumbs = {}
+        self.small = {}           # path -> small picture, made in the background for the pieces next to this one
+        self._save_lock = threading.Lock()
+        self._save_pending = None
         self.scanned = set()   # pieces already checked for newly added photos this time
         self._build()
         if not self.parts:
@@ -116,10 +126,28 @@ class ColourReview(tk.Tk):
         if key not in self.thumbs:
             if len(self.thumbs) > 3000:   # never keep thousands of pictures in memory (it used to crash)
                 self.thumbs.clear()
-            img = Image.open(path).convert("RGB")
-            img.thumbnail((THUMB, THUMB))
+            img = self.small.get(key) or _small(key)
             self.thumbs[key] = ImageTk.PhotoImage(img)
         return self.thumbs[key]
+
+    def _preload(self):
+        """Make the small pictures of the pieces before and after this one in the background, so going
+        to them is quick. Only those are kept."""
+        near = {self.parts[k] for k in (self.i - 1, self.i + 1) if 0 <= k < len(self.parts)}
+        files = [str(f) for p in near if (SOURCE / p).exists() for sub in (SOURCE / p).iterdir() if sub.is_dir()
+                 for f in sub.iterdir() if f.suffix.lower() in config.PHOTO_TYPES]
+        mine = set(self.paths().values())
+        keep = set(files) | mine
+        self.small = {k: v for k, v in self.small.items() if k in keep}
+
+        def work(todo):
+            for key in todo:
+                if key not in self.small:
+                    try:
+                        self.small[key] = _small(key)
+                    except OSError:
+                        pass
+        threading.Thread(target=work, args=([f for f in files if f not in self.small],), daemon=True).start()
 
     def _show_grid(self, files, selectable=False, captions=None):
         for w in self.grid_frame.winfo_children():
@@ -316,7 +344,29 @@ class ColourReview(tk.Tk):
         return self.part_state()["path"]
 
     def save(self):
-        STATE.write_text(json.dumps(self.state), encoding="utf-8")
+        """Save soon, in the background (the state of every piece is big: writing it on every click made
+        the window wait). Several changes close together are saved once."""
+        if self._save_pending:
+            self.after_cancel(self._save_pending)
+        self._save_pending = self.after(800, self._save_in_background)
+
+    def _save_in_background(self):
+        self._save_pending = None
+        text = json.dumps(self.state)    # here, while nothing changes it
+        threading.Thread(target=self._write, args=(text,), daemon=True).start()
+
+    def save_now(self):
+        """Closing: save straight away and wait for it."""
+        if self._save_pending:
+            self.after_cancel(self._save_pending)
+            self._save_pending = None
+        self._write(json.dumps(self.state))
+
+    def _write(self, text):
+        with self._save_lock:            # one write at a time, and never half a file
+            tmp = STATE.with_suffix(".tmp")
+            tmp.write_text(text, encoding="utf-8")
+            tmp.replace(STATE)
 
     def _possible_colours(self):
         """Buttons: every colour the guesses mentioned, plus this part's most common real colours."""
@@ -350,6 +400,7 @@ class ColourReview(tk.Tk):
         self.progress.configure(text=f"Piece {self.i + 1} of {len(self.parts)} · {done} done")
         self.title_lbl.configure(text=f"{part}  {self.names.get(part, '')}  ({len(st['cand'])} photos)")
         {"pick": self.stage_pick, "assign": self.stage_assign, "done": self.stage_done}[st["stage"]]()
+        self.after(100, self._preload)
 
     # stage 1: which colours are there?
     def stage_pick(self):
@@ -619,7 +670,7 @@ def run():
     app = ColourReview()
     try:
         if app.winfo_exists():
-            app.protocol("WM_DELETE_WINDOW", lambda: (app.save(), app.destroy()))
+            app.protocol("WM_DELETE_WINDOW", lambda: (app.save_now(), app.destroy()))
             app.mainloop()
     except tk.TclError:   # closed straight away (nothing to check)
         pass

@@ -17,6 +17,7 @@ For each photo the pieces are found automatically and shown with numbered boxes.
 import json
 import re
 import sys
+import threading
 import time
 import tkinter as tk
 from pathlib import Path
@@ -168,9 +169,9 @@ def find_pieces(img):
     h, w = a.shape[:2]
     # The surface the pieces lie on: the most common colour in the middle part of the photo
     mid = a[h // 4:3 * h // 4, w // 4:3 * w // 4].reshape(-1, 3)
-    q = mid // 40
-    keys, counts = np.unique(q, axis=0, return_counts=True)
-    surface = np.median(mid[(q == keys[counts.argmax()]).all(1)], 0)
+    q = (mid // 40).astype(np.int32)
+    key = q[:, 0] * 49 + q[:, 1] * 7 + q[:, 2]          # each colour group as one number (7 steps a channel)
+    surface = np.median(mid[key == np.bincount(key).argmax()], 0)
     # Light changes across a table, so follow the surface colour area by area,
     # using only surface-like pixels in each area (pieces don't count)
     cell = 40
@@ -252,6 +253,10 @@ class Cutter(tk.Tk):
             self.recognizer = Recognizer()
         self.guesses = {}
         self.scale = 1.0
+        # the photos next to the one shown are got ready in the background, so Back / Next are quick
+        self._ready = {}            # path -> {"img", "boxes", "guesses", "scale", "shown"}
+        self._loading = set()
+        self._model_lock = threading.Lock()
         # the photo fills whatever room the window gives it (it's redrawn when the window changes size)
         photo_box = ttk.LabelFrame(self, text="Photo (drag to add a box, drag an edge to resize, right-click to remove)")
         photo_box.grid(row=0, column=0, sticky="nsew")
@@ -353,10 +358,49 @@ class Cutter(tk.Tk):
             i = photos.index(new[0]) if new else len(photos) - 1
         self.show(photos[i], len(photos))
 
+    # ---------- getting the photos next to this one ready, in the background ----------
+    def _prepare(self, path, scale):
+        """(background) Open a photo, find its pieces, ask the model about them, and scale it for the screen."""
+        try:
+            img = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
+            boxes = find_pieces(img)
+            guesses = {}
+            if self.recognizer is not None:
+                for box in boxes:
+                    guesses[tuple(box)] = self._predict(img, box)
+            shown = img.resize((max(1, int(img.width * scale)), max(1, int(img.height * scale))))
+            self._ready[path] = {"img": img, "boxes": boxes, "guesses": guesses, "scale": scale, "shown": shown}
+        except (OSError, ValueError):
+            pass   # moved or unreadable: it's simply opened the normal way when shown
+        finally:
+            self._loading.discard(path)
+
+    def _preload_neighbours(self):
+        photos = self._photos()
+        if self.path not in photos:
+            return
+        i = photos.index(self.path)
+        near = {photos[(i - 1) % len(photos)], photos[(i + 1) % len(photos)]}
+        for p in list(self._ready):          # only the photo shown and the ones next to it are kept
+            if p not in near and p != self.path:
+                self._ready.pop(p, None)
+        for p in near - set(self._ready) - self._loading - {self.path}:
+            self._loading.add(p)
+            threading.Thread(target=self._prepare, args=(p, self.scale), daemon=True).start()
+
+    def _predict(self, img, box):
+        with self._model_lock:   # one question to the model at a time (the window may ask too)
+            pred = self.recognizer.predict(square_crop(img, box).resize((config.IMAGE_SIZE,) * 2))
+        part, p = pred.parts[0]
+        return (part if part not in ("not_lego", "multiple") else "",
+                self.color_by_id.get(pred.colors[0][0], "Unknown"), p)
+
     def show(self, path, n_photos):
         self.path = path
-        self.img = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
-        self._fit(draw=False)
+        ready = self._ready.get(path)
+        self.img = ready["img"] if ready else ImageOps.exif_transpose(Image.open(path)).convert("RGB")
+        self.guesses = dict(ready["guesses"]) if ready else {}
+        self._fit(draw=False, ready=ready)
         draft = self._draft_file(path)
         if self.reviewing:   # a finished photo: what was saved for it
             record = [r for r in self._load_record(path) if r.get("box")]
@@ -376,7 +420,7 @@ class Cutter(tk.Tk):
             self.fields = [(box, _Value(d["part"]), _Value(d["color"])) for box, d in zip(self.boxes, saved)]
             how = f"continuing your saved progress: {len(self.boxes)} pieces"
         else:
-            self.boxes = find_pieces(self.img)
+            self.boxes = [list(b) for b in ready["boxes"]] if ready else find_pieces(self.img)
             self.fields = []
             how = f"found {len(self.boxes)} pieces"
         self.status.configure(text="")
@@ -389,9 +433,11 @@ class Cutter(tk.Tk):
                                  "Drag on the photo to add a missed piece. Drag a box's edge or corner to resize it. "
                                  "Right-click a box to remove it.")
         self._redraw()
+        self.after(50, self._preload_neighbours)
 
-    def _fit(self, draw=True):
-        """Scale the photo to the room the canvas has (boxes are kept in the photo's own pixels)."""
+    def _fit(self, draw=True, ready=None):
+        """Scale the photo to the room the canvas has (boxes are kept in the photo's own pixels).
+        ready: the photo already scaled in the background, used if it's the right size."""
         if getattr(self, "img", None) is None:
             return
         w, h = self.canvas.winfo_width(), self.canvas.winfo_height()
@@ -401,7 +447,10 @@ class Cutter(tk.Tk):
         if draw and abs(scale - self.scale) < 1e-3 and getattr(self, "tk_img", None):
             return
         self.scale = scale
-        shown = self.img.resize((max(1, int(self.img.width * scale)), max(1, int(self.img.height * scale))))
+        if ready and abs(ready["scale"] - scale) < 1e-3:
+            shown = ready["shown"]
+        else:
+            shown = self.img.resize((max(1, int(self.img.width * scale)), max(1, int(self.img.height * scale))))
         self.tk_img = ImageTk.PhotoImage(shown)
         if draw:
             self._draw_photo()
@@ -578,10 +627,7 @@ class Cutter(tk.Tk):
             return None
         key = tuple(box)
         if key not in self.guesses:
-            pred = self.recognizer.predict(square_crop(self.img, box).resize((config.IMAGE_SIZE,) * 2))
-            part, p = pred.parts[0]
-            self.guesses[key] = (part if part not in ("not_lego", "multiple") else "",
-                                 self.color_by_id.get(pred.colors[0][0], "Unknown"), p)
+            self.guesses[key] = self._predict(self.img, box)
         return self.guesses[key]
 
     def _grab_edge(self, x, y, near=8):
