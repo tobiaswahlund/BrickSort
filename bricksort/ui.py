@@ -5,7 +5,9 @@ mouse and copied (Ctrl+C, or right-click > Copy). Labels that only show a
 picture stay ordinary labels.
 """
 import math
+import os
 import sys
+import threading
 import tkinter as tk
 from pathlib import Path
 from tkinter import font as tkfont
@@ -18,8 +20,44 @@ MUTED = "#666"
 ASSETS = Path(__file__).resolve().parent / "assets"
 
 
+# Opened from the BrickSort menu: this program's window is shown inside the menu's window
+# (BRICKSORT_INSIDE holds the id of the frame to show it in). Taken out of the environment straight
+# away, so a program this one opens gets a window of its own.
+_INSIDE = os.environ.pop("BRICKSORT_INSIDE", None)
+if _INSIDE:
+    _tk_init = tk.Tk.__init__
+
+    def _init_inside(self, *args, **kw):
+        global _INSIDE
+        if _INSIDE:
+            kw.setdefault("use", _INSIDE)
+            _INSIDE = None   # only the first window goes inside the menu
+        _tk_init(self, *args, **kw)
+    tk.Tk.__init__ = _init_inside
+
+
+def _listen_to_menu(root):
+    """Inside the menu: its "Menu" button sends "close" here, and this program closes the way its
+    own close button would (so it can save, or ask first)."""
+    def close():
+        try:
+            handler = root.protocol("WM_DELETE_WINDOW")
+            root.tk.call(handler) if handler else root.destroy()
+        except tk.TclError:
+            pass
+
+    def listen():
+        for line in sys.stdin:
+            if line.strip() == "close":
+                root.after(0, close)
+    threading.Thread(target=listen, daemon=True).start()
+
+
 def use_logo(root):
-    """BrickSort's logo as the window and taskbar icon of this program (instead of Tk's feather)."""
+    """BrickSort's logo as the window and taskbar icon of this program (instead of Tk's feather).
+    Opened from the BrickSort menu, it also listens for the menu's "back to the menu"."""
+    if isinstance(root, tk.Tk) and root.cget("use"):
+        _listen_to_menu(root)
     try:
         if sys.platform == "win32":
             import ctypes  # its own taskbar button, not grouped under Python's
