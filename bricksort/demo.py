@@ -16,7 +16,7 @@ from tkinter import filedialog, messagebox, simpledialog, ttk
 import numpy as np
 from PIL import Image, ImageTk
 
-from . import catalog, config, custom, junk
+from . import belts, catalog, config, custom, junk, surfaces
 from .cut import autocomplete, wide_dropdown
 from .ldraw import Library
 from .model import Prediction
@@ -118,8 +118,12 @@ class Demo(tk.Tk):
         wide_dropdown(self.color_choice)
         self.color_choice.grid(row=5, column=0, sticky="we", padx=8)
         self.color_choice.set("Random")
+        ttk.Label(left, text="Background").grid(row=6, column=0, sticky="w", padx=8, pady=(6, 0))
+        self.background = ttk.Combobox(left, state="readonly", width=38, values=[ANY_BACKGROUND, *belts.BELTS])
+        self.background.grid(row=7, column=0, sticky="we", padx=8)
+        self.background.set(ANY_BACKGROUND)
         btns = ttk.Frame(left)
-        btns.grid(row=6, column=0, sticky="we", padx=8, pady=8)
+        btns.grid(row=8, column=0, sticky="we", padx=8, pady=8)
         ttk.Button(btns, text="▼ Drop", command=self.drop).pack(side="left", expand=True, fill="x")
         ttk.Button(btns, text="Random piece", command=self.random_drop).pack(side="left", expand=True, fill="x",
                                                                           padx=(6, 0))
@@ -247,6 +251,10 @@ class Demo(tk.Tk):
         self.scene.set_color(junk.random_color(self.rng) if is_junk else self.colors[cid][1],
                              transparent=not is_junk and self.colors[cid][0].startswith("Trans"))
         self.scene.randomize_look(self.rng)
+        belt = self.background.get()
+        if belt != ANY_BACKGROUND:   # one of the sorting machine's belts instead of a random surface
+            name = next(n for n, b in surfaces.SORTER_BELTS.items() if b == belt)
+            self.scene.model.geom_matid[self.scene.floor] = self.scene.surface_mats[list(surfaces.SURFACES).index(name)]
         self.status.configure(text=f"Dropping {part['id']} {part['name']} in {self.colors[cid][0]} …")
         frames = self.scene.drop(self.rng, frame_every=12, camera="side")
         self._animate(frames, (part["id"], cid))
@@ -492,6 +500,23 @@ class Demo(tk.Tk):
         pump()
 
 
+ANY_BACKGROUND = "Table, floor or belt (random)"
+RIGHT = "#a8dca8"   # pale green: the outline around the right answer
+
+
+def _outlined(master, right, padding, groove=True):
+    """(outline, inside) for one answer: pack the outline, put the answer inside. The right answer
+    gets a pale green outline; the others a plain groove (or nothing)."""
+    if right:
+        outline = tk.Frame(master, bg=RIGHT, padx=3, pady=3)
+        inside = ttk.Frame(outline, padding=padding)
+    else:
+        outline = ttk.Frame(master, padding=3)
+        inside = ttk.Frame(outline, relief="groove" if groove else "flat", padding=padding)
+    inside.pack(fill="both", expand=True)
+    return outline, inside
+
+
 class ReviewWindow(tk.Toplevel):
     def __init__(self, app, crop, guesses, color_guesses, truth, source=None, on_saved=None, extra=(), simulated=False):
         super().__init__(app)
@@ -519,10 +544,12 @@ class ReviewWindow(tk.Toplevel):
         self.color = ttk.Combobox(info, width=28, values=app.color_list)
         wide_dropdown(self.color)
         autocomplete(self.color, app.color_list)
+        right_part, right_colour = truth if truth else (None, None)
         for cid, p in color_guesses:
             rgb = app.colors.get(cid, ("", (128, 128, 128)))[1]
-            line = ttk.Frame(info)
-            line.pack(anchor="w")
+            right = right_colour is not None and                 catalog.same_colour(app.color_name(cid)) == catalog.same_colour(app.color_name(right_colour))
+            outline, line = _outlined(info, right, padding=1, groove=False)
+            outline.pack(anchor="w")
             tk.Label(line, width=3, bg="#%02x%02x%02x" % rgb, relief="solid", bd=1).pack(side="left")
             ttk.Button(line, text=f"{app.color_name(cid)} ({p:.0%})",
                        command=lambda c=cid: self.color.set(app.color_name(c))).pack(side="left", padx=4)
@@ -544,8 +571,9 @@ class ReviewWindow(tk.Toplevel):
         row.pack()
         guess_rgb = app.colors.get(color_guesses[0][0], (None, (160, 165, 169)))[1] if color_guesses else (160, 165, 169)
         for part_id, p in guesses:
-            card = ttk.Frame(row, relief="groove", padding=6)
-            card.pack(side="left", padx=4, anchor="n")
+            # the right answer (when the piece was dropped here, so it's known) has a pale green outline
+            outline, card = _outlined(row, right_part is not None and catalog.same_piece(part_id, right_part), 6)
+            outline.pack(side="left", padx=1, anchor="n")
             # a 3D model of the guess, in the guessed colour, that you can spin around
             PartViewer(card, app.lib, part_id, rgb=guess_rgb, size=130, fallback=reference_image(part_id)).pack()
             Label(card, text=part_id, font=("Segoe UI", 11, "bold")).pack()
