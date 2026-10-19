@@ -124,13 +124,19 @@ def bin_need(rules, b):
 
 def _by_category(rules, category, category_conf, color_name, color_conf):
     """Part number unsure, but the category is clear: only bins that ask for just a category
-    (and maybe a colour) can be used, e.g. all minifig accessories in one bin."""
+    (and maybe a colour) can be used, e.g. all minifig accessories in one bin.
+    Bins are checked top to bottom, so a bin above it that the piece might belong in (one that asks
+    about its shape, which isn't known without the part) means rest bin: the category bin could be
+    the wrong one. E.g. a black Technic axle belongs in 'Flat black' if that comes before 'Technic'."""
     if not category:
         return None
+    sure_colour = color_conf >= rules["confidence_needed"]
     for b in rules["bins"]:
         when = b["when"]
         need = bin_need(rules, b)
         if "category" not in when or set(when) - {"category", "color"}:
+            if _might_match(when, category, color_name, sure_colour):
+                return None
             continue
         if not any(t in category.lower() for t in _texts(when["category"])):
             continue
@@ -143,6 +149,17 @@ def _by_category(rules, category, category_conf, color_name, color_conf):
                 continue
         return b["name"], f"unknown part, but {category_conf:.0%} sure it's a {category} piece"
     return None
+
+
+def _might_match(when, category, color_name, sure_colour):
+    """Could a piece of this category (and colour, if sure) belong in a bin with these conditions?
+    Conditions about the part itself (its shape, number, name...) can't be ruled out."""
+    if "category" in when and not any(t in category.lower() for t in _texts(when["category"])):
+        return False
+    if "color" in when and sure_colour and catalog.same_colour(color_name or "").lower() not in {
+            catalog.same_colour(t).lower() for t in _texts(when["color"])}:
+        return False
+    return True
 
 
 def choose_bin(rules, props, part_id, part_conf, color_name, color_conf, n_objects,

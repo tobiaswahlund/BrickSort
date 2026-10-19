@@ -69,6 +69,15 @@ def test_unknown_part_sorted_by_a_clear_category():
     assert got == "Heads"
 
 
+def test_category_bin_only_when_no_bin_above_might_be_right():
+    rules = {**RULES, "bins": [{"name": "Flat black", "when": {"color": ["Black"], "flat": True}},
+                               {"name": "Technic", "when": {"category": "technic"}},
+                               {"name": "Other", "when": {}}]}
+    unsure = dict(part_conf=0.2, category="Technic Axles", category_conf=0.99, rules=rules)
+    assert choose("9999", colour="Black", **unsure) == "Rest"     # might be flat black: unknown without the part
+    assert choose("9999", colour="Red", **unsure) == "Technic"    # surely not black: 'Flat black' is ruled out
+
+
 def test_look_alike_colours_count_as_the_same():
     rules = {**RULES, "bins": [{"name": "Grey", "when": {"color": ["Light Bluish Gray"]}}]}
     assert choose("3001", colour="Light Gray", rules=rules) == "Grey"
