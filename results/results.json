@@ -1,70 +1,45 @@
 {
   "model": "lego_model.pt",
-  "model_sha256": "cfb1c36786db66f530f9b790440af5827c7012d818d2fe46511d93f0dab0a03b",
-  "tested": "2026-10-15 15:22",
+  "model_sha256": "7e1f5cb6b913d0c6e83ac5056dde68c6b08f2b368cceae3b2733d737358c4600",
+  "tested": "2026-10-19 09:59",
   "photos": 163,
   "pieces": 163,
-  "known_pieces": 140,
+  "known_pieces": 152,
   "part_first_guess": {
-    "right": 0.5285714285714286,
-    "pieces": 140,
-    "low": 0.4462266936992517,
-    "high": 0.6093900402636631
+    "right": 0.5460526315789473,
+    "pieces": 152,
+    "low": 0.46674019289559576,
+    "high": 0.6230946137285661
   },
   "part_top5": {
-    "right": 0.8214285714285714,
-    "pieces": 140,
-    "low": 0.7496682125749768,
-    "high": 0.8760200445078142
+    "right": 0.7828947368421053,
+    "pieces": 152,
+    "low": 0.7108172835321319,
+    "high": 0.8410251000162917
   },
   "colour": {
-    "right": 0.3,
-    "pieces": 140,
-    "low": 0.2302612501710218,
-    "high": 0.38042161208857483
+    "right": 0.4407894736842105,
+    "pieces": 152,
+    "low": 0.364285114725774,
+    "high": 0.5202129910431605
   },
   "colour_all_pieces": {
-    "right": 0.3067484662576687,
+    "right": 0.43558282208588955,
     "pieces": 163,
-    "low": 0.2410822154387965,
-    "high": 0.3813141173702871
+    "low": 0.3618130661647544,
+    "high": 0.5123190447716067
   },
   "category_unknown_parts": {
-    "right": 0.43478260869565216,
-    "pieces": 23,
-    "low": 0.25634368332198654,
-    "high": 0.6318895069498304
+    "right": 0.2727272727272727,
+    "pieces": 11,
+    "low": 0.09745880573921467,
+    "high": 0.5656502930102463
   },
   "most_confused": [
     {
-      "real": "3003",
+      "real": "122c02",
       "guessed": "multiple",
-      "photos": 2
-    },
-    {
-      "real": "3004",
-      "guessed": "multiple",
-      "photos": 2
-    },
-    {
-      "real": "3023",
-      "guessed": "multiple",
-      "photos": 2
-    },
-    {
-      "real": "3622",
-      "guessed": "multiple",
-      "photos": 2
-    },
-    {
-      "real": "3666",
-      "guessed": "3460",
-      "photos": 2
-    },
-    {
-      "real": "6587",
-      "guessed": "32073",
-      "photos": 2
+      "photos": 1
     },
     {
       "real": "2420",
@@ -73,17 +48,42 @@
     },
     {
       "real": "2454a",
-      "guessed": "54200",
+      "guessed": "60592",
       "photos": 1
     },
     {
       "real": "2454a",
-      "guessed": "90195",
+      "guessed": "6091",
       "photos": 1
     },
     {
-      "real": "2456",
-      "guessed": "3009",
+      "real": "2458",
+      "guessed": "87087",
+      "photos": 1
+    },
+    {
+      "real": "3001",
+      "guessed": "32140",
+      "photos": 1
+    },
+    {
+      "real": "3001",
+      "guessed": "30363",
+      "photos": 1
+    },
+    {
+      "real": "3001",
+      "guessed": "2456",
+      "photos": 1
+    },
+    {
+      "real": "3002",
+      "guessed": "3001",
+      "photos": 1
+    },
+    {
+      "real": "3003",
+      "guessed": "32526",
       "photos": 1
     }
   ]

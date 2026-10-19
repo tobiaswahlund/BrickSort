@@ -6,8 +6,8 @@ The main choices behind BrickSort, why I made them, and what they cost.
 
 The model mostly learns from pictures rendered from LDraw's 3D models, not from photos. It was the
 easiest and fastest way to get started, so that I had something to work with. Every rendered picture
-already knows its exact part number and colour, so I get about 100 pictures of each of about 600 parts
-(and some of 1,200 more) without labelling any by hand. The renders stay in use because I can copy the setting the model will actually
+already knows its exact part number and colour, so I get about 100 pictures of each of about 1,300 parts
+(and some of 1,100 more) without labelling any by hand. The renders stay in use because I can copy the setting the model will actually
 be used in: the sorting machine's light, belt and background.
 
 The cost is that renders can't capture the shine and texture of real pieces, all the scratches and
@@ -87,7 +87,7 @@ shared network learns those once and every answer benefits, and it runs once per
 times. As a first project it was also easier to start with one model. In the future I'd like to try four
 separate models and see whether that gives better results.
 
-The category helps with parts the model doesn't know by number: about 1,200 rarer parts are trained by
+The category helps with parts the model doesn't know by number: about 1,100 rarer parts are trained by
 category only. For those it can still say, for example, "minifig accessory", and a category bin can take
 the piece instead of the rest bin.
 
@@ -129,8 +129,8 @@ part, so it gets more training exactly where it's needed most.
 
 ## What the results tell me
 
-In the test, the right part was the first guess 53% of the time, but among the top five guesses 82% of the
-time. So it's often close, and not clueless even when the first guess is wrong. For many uses that's
+In the first test (model v0.1.0), the right part was the first guess 53% of the time, but among the top
+five guesses 82% of the time. So it's often close, and not clueless even when the first guess is wrong. For many uses that's
 enough: to sort all the reds, blues and yellows, it only needs to know a piece is blue, not whether it's
 Medium Blue or Bright Light Blue, and to pull out the Technic pieces it doesn't need to tell a Technic axle 3
 from an axle 3 with a stop.
@@ -138,11 +138,11 @@ from an axle 3 with a stop.
 Colour is affected far more by lighting than shape is, which makes it important to train on the lighting
 the machine actually has. So it matters less that colour is weak out of the box: it gets better with
 training on the machine's own setup and corrections. To raise the colour score, the lighting in the
-training pictures needs to be closer to the real pictures; I've already matched the plastic's shine to real
-bricks for the next model. Also, the model was trained on pictures from all kinds of angles, but the
-sorting machine only ever sees pieces from above. Training more on pictures from above (the machine setup
-already sets how many of the training pictures look like the machine) should make it better at its real
-job, at the cost of recognising pieces in photos taken from any angle.
+training pictures needs to be closer to the real pictures. For v0.2.0 I matched the plastic's shine to real
+bricks by eye and used the machine's LED-strip lighting, and colour went from 30% to 44%. Also, the model was trained on pictures from all kinds of angles, but the
+sorting machine only ever sees pieces from above. So v0.2.0 was trained only on pictures from above, with
+the piece anywhere in the camera's view, which suits its real job at the cost of recognising pieces in
+photos taken from any angle.
 
 ## What I'd do differently
 

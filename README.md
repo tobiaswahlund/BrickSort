@@ -27,20 +27,23 @@ Recognises LEGO parts from a camera picture and sorts them on a simulated convey
 
 Tested on 163 phone photos of different bricks, scooped blindly from my own collection (mostly Star
 Wars and Castle, so not a sample of all LEGO), labelled by hand without seeing the model's guesses and
-never used in training (`python -m bricksort.evaluate`, model v0.1.0).
-140 of them are parts the model knows; the part and colour scores are on those.
+never used in training (`python -m bricksort.evaluate`, model v0.2.0).
+152 of them are parts the model knows (it knows 1,311); the part and colour scores are on those.
 
 | | Right | 95% range | Pieces |
 |---|---|---|---|
-| Part, first guess | 53% | 45%–61% | 140 |
-| Part, within top 5 | 82% | 75%–88% | 140 |
-| Colour | 30% | 23%–38% | 140 |
-| Category of parts it doesn't know | 43% | 26%–63% | 23 |
+| Part, first guess | 55% | 47%–62% | 152 |
+| Part, within top 5 | 78% | 71%–84% | 152 |
+| Colour | 44% | 36%–52% | 152 |
+| Category of parts it doesn't know | 27% | 10%–57% | 11 |
 
 What it shows:
-- Colour is the weak spot: greys come out too light. Light Bluish Gray was called White 25 times
-  and Dark Bluish Gray 18 times. The likely cause is light reflected off the plastic, which is
-  brighter in these photos than in the training pictures.
+- Colour improved most, from 30% with v0.1.0 to 44% (on the same 140 bricks v0.1.0 knew). v0.1.0 saw
+  grey bricks as white, because the plastic in its training pictures didn't shine like real plastic.
+  v0.2.0 was trained with the shine matched to real bricks, the machine's LED-strip lighting and
+  every picture taken from above. Dark Bluish Gray is still often taken for Light Bluish Gray.
+- Parts stayed about the same (first guess 53% → 57%, top 5 82% → 80% on those 140 bricks): changes
+  well inside the 95% ranges, while the model now chooses between twice as many parts.
 - The number the training prints (on held-back dataset photos) is much higher. Those photos come from
   the same sessions and bricks as the training photos, so it doesn't show how the model does on new ones.
 - Full details: [results/RESULTS.md](results/RESULTS.md).
@@ -104,10 +107,10 @@ window is shown with what each button does in [docs/WINDOWS.md](docs/WINDOWS.md)
 
 - The sorting machine is simulated so far. The hardware interface is ready; a real webcam, belt,
   servo flap and Arduino are next.
-- About 600 parts. Rarer parts are only recognised by category.
+- About 1,300 parts. Rarer parts are only recognised by category.
 - The launchers are Windows-only; the Python commands work elsewhere too.
-- Colours on new photos (30%, see Results). The plastic's shine has now been matched to real photos
-  by eye; the next model is trained with it and scored on the same test.
+- Colours on new photos (44%, see Results), Dark Bluish Gray above all. Next: more real photos of
+  pieces on the machine's own belt, and training with them.
 
 ## Credits
 
