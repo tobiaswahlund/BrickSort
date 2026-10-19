@@ -12,7 +12,9 @@ Run:  python -m bricksort.camera_test   (or Camera test in the BrickSort menu)
    the belt; the rest is ignored.
 4. Colours: put a white piece under it and press the button, so the camera's colour tint under your
    light is taken out (a white piece should look white to the model).
-5. Put pieces under the camera, a few cm apart. Once a piece lies still, it's recognised.
+5. Put pieces under the camera, a few cm apart, and press Take picture (or Space). Pieces that would go
+   to the rest bin are kept: Review rest bin says what they really were, for the next training.
+   (Or tick "By itself": then a piece is recognised once it lies still, and nothing is kept.)
 Settings are kept in real_machine.json (camera, pixels per mm, area, colour correction).
 """
 import json
@@ -146,9 +148,19 @@ class CameraTest(tk.Tk):
         self.area_choice.pack(side="left", padx=(0, 6))
         self.area_choice.bind("<<ComboboxSelected>>", lambda e: self._area_chosen())
         ttk.Button(bar, text="3. Colours with a white piece", command=self.white_balance).pack(side="left", padx=(0, 6))
-        ttk.Button(bar, text="Forget the pieces", command=self.forget).pack(side="left")
         self.scale_text = ttk.Label(bar, text="", foreground=MUTED)
         self.scale_text.pack(side="right")
+
+        # taking the picture: with the button (or Space), or by itself once a piece lies still
+        shoot = ttk.Frame(self)
+        shoot.grid(row=2, column=0, columnspan=2, sticky="we", pady=(8, 0))
+        ttk.Button(shoot, text="📷 Take picture  (Space)", command=self.take_picture).pack(side="left")
+        self.auto = tk.BooleanVar(value=False)
+        ttk.Checkbutton(shoot, text="By itself when a piece lies still", variable=self.auto).pack(side="left",
+                                                                                                 padx=10)
+        ttk.Button(shoot, text="Clear the list", command=self.forget).pack(side="left")
+        ttk.Button(shoot, text="Review rest bin…", command=self.review_rest).pack(side="right")
+        self.bind("<space>", lambda e: self.take_picture())
 
         view = ttk.LabelFrame(self, text="Camera (red box = piece found)")
         view.grid(row=1, column=0, sticky="nsew")
@@ -161,7 +173,7 @@ class CameraTest(tk.Tk):
         self.list = ttk.Frame(side)
         self.list.pack(fill="both", expand=True, padx=8, pady=6)
         self.status = Label(self, text="Opening the camera …", foreground=MUTED, wraplength=1100, justify="left")
-        self.status.grid(row=2, column=0, columnspan=2, sticky="we", pady=(6, 0))
+        self.status.grid(row=3, column=0, columnspan=2, sticky="we", pady=(6, 0))
         self.columnconfigure(0, weight=3)
         self.columnconfigure(1, weight=1, minsize=330)
         self.rowconfigure(1, weight=1)
@@ -311,8 +323,8 @@ class CameraTest(tk.Tk):
                         self.detector.learn_background(f)
                     self.learning = None
                     self._apply_area()
-                    self.status.configure(text="Learned. Now put pieces under the camera, a few cm apart. "
-                                               "Measure once with a known piece (button 2) so sizes are known.")
+                    self.status.configure(text="Learned. Now put pieces under the camera, a few cm apart, and press Take picture "
+                                               "(Space). Measure once with a known piece (button 2) so sizes are known.")
             while not self.done.empty():
                 self._got(*self.done.get())
             blobs = self.detector.find(frame) if self.detector else []
@@ -340,14 +352,51 @@ class CameraTest(tk.Tk):
                 t["result"] = None   # it was moved: look again once it lies still
             t["box"] = b
             seen.add(best)
-            if t["still"] >= STILL_FRAMES and t["result"] is None and not t["busy"] and self.recognizer:
+            if (self.auto.get() and t["still"] >= STILL_FRAMES and t["result"] is None and not t["busy"]
+                    and self.recognizer):
                 t["busy"] = True
                 threading.Thread(target=self._recognise, args=(best, frame, b), daemon=True).start()
         for tid in [t for t in self.tracks if t not in seen]:   # taken away
             del self.tracks[tid]
         self._show_list()
 
-    def _recognise(self, tid, frame, blob):
+    def take_picture(self):
+        """Look at every piece under the camera now (each gets a fresh answer), and keep the pictures."""
+        frame = self.camera.latest if self.camera else None
+        if self.detector is None or frame is None:
+            self.status.configure(text="Learn the empty surface first (button 1).")
+            return
+        if self.recognizer is None:
+            self.status.configure(text="The model is still loading: try again in a moment.")
+            return
+        if not self.tracks:
+            self.status.configure(text="No pieces found under the camera.")
+            return
+        for tid, t in self.tracks.items():
+            if not t["busy"]:
+                t["busy"], t["result"] = True, None
+                threading.Thread(target=self._recognise, args=(tid, frame, t["box"], True), daemon=True).start()
+        self.status.configure(text=f"Picture taken: {len(self.tracks)} pieces. The ones that would go to the rest "
+                                   "bin are kept for Review rest bin.")
+
+    def review_rest(self):
+        """The Demo's review window on the rest-bin pictures: say what each piece really was. Those answers
+        are saved as real photos and used the next time the model is trained."""
+        import subprocess
+        import sys
+        subprocess.Popen([sys.executable, "-m", "bricksort.demo", "--rest"], cwd=config.PROJECT_DIR)
+
+    def _keep(self, picture, pred, bin_name, reason):
+        """Save the picture and the guesses where Review rest bin / Spot check look (as the machine does)."""
+        folder = config.REST_LOG if bin_name == self.rules["rest_bin"] else config.SORTED_LOG
+        folder.mkdir(exist_ok=True)
+        stem = time.strftime("%Y%m%d-%H%M%S") + f"-cam{self.next_id:04d}-{threading.get_ident() % 10000:04d}"
+        picture.save(folder / f"{stem}.png")
+        info = {"bin": bin_name, "reason": reason, "time": time.strftime("%Y-%m-%d %H:%M:%S"), "real": True,
+                "parts": pred.parts, "colors": pred.colors, "categories": pred.categories, "printed": pred.printed}
+        (folder / f"{stem}.json").write_text(json.dumps(info), encoding="utf-8")
+
+    def _recognise(self, tid, frame, blob, keep=False):
         picture = correct_colours(crop(frame, blob), self.settings.get("colour_gains"))
         pred = self.recognizer.predict(picture)
         part, p_conf = pred.parts[0]
@@ -361,6 +410,8 @@ class CameraTest(tk.Tk):
         result = {"part": part, "p": p_conf, "colour": colour, "c": c_conf, "bin": bin_name, "reason": reason,
                   "picture": picture, "size": size, "next": pred.parts[1:3],
                   "next_colours": [(self.color_names.get(c, "?"), q) for c, q in pred.colors[1:3]]}
+        if keep:
+            self._keep(picture, pred, bin_name, reason)
         self.done.put((tid, result))   # picked up by _tick (Tk is only touched from its own thread)
 
     def _got(self, tid, result):

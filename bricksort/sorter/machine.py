@@ -48,6 +48,7 @@ class Machine:
         self.frame_no = 0
         self.together_mm = 10.0  # objects closer than this (along the belt) can't be separated
         self.keep_pictures = True  # save pictures + guesses for "Review rest bin" and "Spot check"
+        self.real = False          # a real camera: corrections of its pictures count as real photos
 
     def calibrate(self, empty_frames):
         for f in empty_frames:
@@ -151,8 +152,9 @@ class Machine:
         or spot-check pieces that were sorted."""
         folder.mkdir(exist_ok=True)
         stem = time.strftime("%Y%m%d-%H%M%S") + f"-{self.frame_no:06d}"
-        d.picture.save(folder / f"{stem}.png")
-        info = {"bin": d.bin, "reason": d.reason, "time": time.strftime("%Y-%m-%d %H:%M:%S")}
+        # the picture as the model saw it (e.g. with the camera's colour tint taken out)
+        getattr(self.recognizer, "prepare", lambda p: p)(d.picture).save(folder / f"{stem}.png")
+        info = {"bin": d.bin, "reason": d.reason, "time": time.strftime("%Y-%m-%d %H:%M:%S"), "real": self.real}
         if pred:
             info.update(parts=pred.parts, colors=pred.colors, categories=pred.categories, printed=pred.printed)
         (folder / f"{stem}.json").write_text(json.dumps(info), encoding="utf-8")

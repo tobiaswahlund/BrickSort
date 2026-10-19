@@ -329,6 +329,7 @@ class Demo(tk.Tk):
             self.status.configure(text=f"{len(todo)} rest-bin pieces to review. Why it went there: "
                                        f"{meta.get('reason', '?')} ({meta.get('time', '')})")
         pred = Prediction(meta["parts"], meta["colors"], meta.get("categories", [])) if "parts" in meta else None
+        simulated = not meta.get("real", False)   # from the virtual machine, or a real camera?
 
         def done(part_id=None, color=None):
             png.unlink(missing_ok=True)
@@ -337,16 +338,16 @@ class Demo(tk.Tk):
                 self._record_spot_check(pred, part_id, color)
 
         def not_lego():
-            self.save_correction(crop, junk.NOT_LEGO, simulated=True)
+            self.save_correction(crop, junk.NOT_LEGO, simulated=simulated)
             done()
             win.destroy()
 
         def several():
-            self.save_correction(crop, catalog.MULTIPLE, simulated=True)  # teaches "several pieces" -> rest bin
+            self.save_correction(crop, catalog.MULTIPLE, simulated=simulated)  # teaches "several pieces" -> rest bin
             done()
             win.destroy()
 
-        win = self.review(crop, truth=None, pred=pred, on_saved=done, simulated=True,
+        win = self.review(crop, truth=None, pred=pred, on_saved=done, simulated=simulated,
                           extra=[("Not LEGO", not_lego), ("Several pieces", several)])
         # answered -> show the next one; "Skip" keeps it for later and stops
         win.bind("<Destroy>", lambda e: e.widget is win and not png.exists()

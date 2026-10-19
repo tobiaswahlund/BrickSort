@@ -51,8 +51,11 @@ class ColourCorrected:
     def __init__(self, recognizer, gains):
         self.recognizer, self.gains = recognizer, gains
 
+    def prepare(self, picture):
+        return correct_colours(picture, self.gains)
+
     def predict(self, picture):
-        return self.recognizer.predict(correct_colours(picture, self.gains))
+        return self.recognizer.predict(self.prepare(picture))
 
 
 class HandMoved(hardware.Belt, hardware.Diverter):
@@ -263,6 +266,7 @@ class RealMachine(tk.Tk):
         model = ColourCorrected(self.recognizer, self.settings.get("colour_gains")) if self.recognizer else None
         self.machine = Machine(camera, belt, belt, model, self.color_names, self.props,
                                hardware.Clock(), self.rules)
+        self.machine.real = True   # corrections of these pictures are real photos, not simulated ones
         self.machine.calibrate(frames)
         self._apply_area()
         self.counts = {}
