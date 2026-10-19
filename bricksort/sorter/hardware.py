@@ -83,6 +83,7 @@ class SerialMachine(Belt, Diverter):
     It sends simple text lines the microcontroller acts on, and it answers OK to each:
       "BELT 50"   run the belt at 50 mm/s ("BELT 0" stops it)
       "BIN 3"     turn the chute to bin number 3 now (0 = the first bin)
+      "BINS 9"    how many bins the chute aims at (sent on connecting)
       "PING"      answered with PONG
     The timing (when the piece reaches the chute) is handled here, so the
     microcontroller code can stay very simple. bins: the bin names in the order
@@ -102,6 +103,7 @@ class SerialMachine(Belt, Diverter):
         self.chute_lead_s = chute_lead_s   # the chute turns this long before the piece arrives
         self.clock = Clock()
         self.lock = threading.Lock()       # the timers may want to talk at the same time
+        self.ready = self._say(f"BINS {len(self.bin_numbers)}") == "OK" if self.bin_numbers else True
 
     def _say(self, line):
         with self.lock:

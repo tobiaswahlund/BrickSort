@@ -9,12 +9,10 @@ import pytest
 
 class PretendArduino:
     """Stands in for serial.Serial: keeps what the firmware would do, answers what it would answer."""
-    bins = 5   # as set in the firmware (BIN_COUNT): here the five bins below
-
     def __init__(self, port, baud, timeout=1):
         self.port, self.baud = port, baud
         self.answers = [b"BRICKSORT READY\r\n"]   # what it says after restarting
-        self.belt_mm_s, self.chute_bin, self.heard = 0.0, self.bins - 1, []
+        self.bins, self.belt_mm_s, self.chute_bin, self.heard = 6, 0.0, 5, []
 
     def readline(self):
         return self.answers.pop(0) if self.answers else b""
@@ -29,6 +27,9 @@ class PretendArduino:
             self.answers.append(b"PONG\r\n")
         elif verb == "BELT":
             self.belt_mm_s = float(arg)
+            self.answers.append(b"OK\r\n")
+        elif verb == "BINS" and 1 <= int(arg) <= 12:
+            self.bins, self.chute_bin = int(arg), int(arg) - 1
             self.answers.append(b"OK\r\n")
         elif verb == "BIN" and 0 <= int(arg) < self.bins:
             self.chute_bin = int(arg)
@@ -50,6 +51,7 @@ def machine(monkeypatch):
 
 
 def test_it_finds_the_arduino_and_runs_the_belt(machine):
+    assert machine.ready and machine.link.bins == 5   # it told the Arduino how many bins there are
     assert machine.ping()
     machine.start()
     assert machine.link.belt_mm_s == 40

@@ -3,6 +3,7 @@
 // The PC (bricksort/sorter/hardware.py, SerialMachine) sends one line per command over USB, 115200 baud:
 //   BELT 50     run the belt at 50 mm/s (BELT 0 stops it)
 //   BIN 3       turn the chute to bin 3 (0 = the first bin)
+//   BINS 9      how many bins there are (the PC sends it on connecting; spread from FIRST_ANGLE to LAST_ANGLE)
 //   PING        answers PONG (the PC checks the Arduino is there)
 // Every command is answered with OK (or ERR and why), so the PC can tell it arrived.
 // The PC does the timing (when a piece reaches the chute), so this stays simple.
@@ -20,19 +21,20 @@ const float STEPS_PER_TURN = 200.0;   // a NEMA 17 motor: 200 full steps per tur
 const float MICROSTEPS = 16.0;        // as set on the driver (A4988: MS1-3 high = 16)
 const float ROLLER_MM = 25.0;         // diameter of the roller that drives the belt
 const bool BELT_REVERSED = false;     // true if the belt runs the wrong way
-const int BIN_COUNT = 6;              // bins around the chute, rest bin included
+const int MAX_BINS = 12;              // the most bins the chute can aim at (the PC says how many: BINS)
 const int FIRST_ANGLE = 30, LAST_ANGLE = 150;   // chute angle for the first and last bin
 // --------------------------------------------
 
 const float STEPS_PER_MM = STEPS_PER_TURN * MICROSTEPS / (PI * ROLLER_MM);
 Servo chute;
+int binCount = 6;                // set by the PC with BINS
 unsigned long stepEveryUs = 0;   // 0: belt stopped
 unsigned long lastStepUs = 0;
 String line;
 
 int angleFor(int bin) {
-  if (BIN_COUNT < 2) return (FIRST_ANGLE + LAST_ANGLE) / 2;
-  return FIRST_ANGLE + (long)(LAST_ANGLE - FIRST_ANGLE) * bin / (BIN_COUNT - 1);
+  if (binCount < 2) return (FIRST_ANGLE + LAST_ANGLE) / 2;
+  return FIRST_ANGLE + (long)(LAST_ANGLE - FIRST_ANGLE) * bin / (binCount - 1);
 }
 
 void setBelt(float mmPerS) {
@@ -58,11 +60,20 @@ void handle(String cmd) {
     Serial.println("OK");
   } else if (verb == "BIN") {
     int bin = arg.toInt();
-    if (bin < 0 || bin >= BIN_COUNT) {
+    if (bin < 0 || bin >= binCount) {
       Serial.println("ERR no such bin");
       return;
     }
     chute.write(angleFor(bin));
+    Serial.println("OK");
+  } else if (verb == "BINS") {
+    int n = arg.toInt();
+    if (n < 1 || n > MAX_BINS) {
+      Serial.println("ERR between 1 and 12 bins");
+      return;
+    }
+    binCount = n;
+    chute.write(angleFor(binCount - 1));   // the last bin (the rest bin) until told otherwise
     Serial.println("OK");
   } else if (verb.length()) {
     Serial.println("ERR unknown command");
@@ -76,7 +87,7 @@ void setup() {
   digitalWrite(DIR_PIN, BELT_REVERSED ? HIGH : LOW);
   setBelt(0);
   chute.attach(SERVO_PIN);
-  chute.write(angleFor(BIN_COUNT - 1));   // start pointing at the last bin (the rest bin)
+  chute.write(angleFor(binCount - 1));   // start pointing at the last bin (the rest bin)
   Serial.begin(115200);
   Serial.println("BRICKSORT READY");
 }
