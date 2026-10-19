@@ -23,7 +23,7 @@ from .. import catalog, config
 RULES_FILE = config.PROJECT_DIR / "bins.json"
 
 DEFAULT = {
-    "confidence_needed": 0.9,
+    "confidence_needed": 0.85,   # tested: about 0% wrong in real bins, 60% of pieces sorted (2026-10-19)
     "not_lego_bin": "Not Lego",
     "rest_bin": "Rest",
     "bins": [
