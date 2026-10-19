@@ -10,8 +10,10 @@ Run:  python -m bricksort.camera_test   (or Camera test in the BrickSort menu)
    edges) under it and press the button. Now BrickSort knows how many pixels are one millimetre.
    Area: only a rectangle or circle of the picture can be looked at (drag it on the picture), e.g. just
    the belt; the rest is ignored.
-4. Put pieces under the camera, a few cm apart. Once a piece lies still, it's recognised.
-Settings are kept in real_machine.json (camera, pixels per mm, area).
+4. Colours: put a white piece under it and press the button, so the camera's colour tint under your
+   light is taken out (a white piece should look white to the model).
+5. Put pieces under the camera, a few cm apart. Once a piece lies still, it's recognised.
+Settings are kept in real_machine.json (camera, pixels per mm, area, colour correction).
 """
 import json
 import queue
@@ -48,6 +50,14 @@ def load_settings():
 
 def save_settings(s):
     SETTINGS.write_text(json.dumps(s, indent=2), encoding="utf-8")
+
+
+def correct_colours(picture, gains):
+    """The picture with the camera's colour tint taken out (gains from white_balance); unchanged if none."""
+    if not gains:
+        return picture
+    a = np.asarray(picture, np.float32) * np.asarray(gains, np.float32)
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
 
 
 def find_cameras(n=4):
@@ -135,6 +145,7 @@ class CameraTest(tk.Tk):
         self.area_choice.set({"rect": "Rectangle", "circle": "Circle"}.get(shape, "Whole picture"))
         self.area_choice.pack(side="left", padx=(0, 6))
         self.area_choice.bind("<<ComboboxSelected>>", lambda e: self._area_chosen())
+        ttk.Button(bar, text="3. Colours with a white piece", command=self.white_balance).pack(side="left", padx=(0, 6))
         ttk.Button(bar, text="Forget the pieces", command=self.forget).pack(side="left")
         self.scale_text = ttk.Label(bar, text="", foreground=MUTED)
         self.scale_text.pack(side="right")
@@ -233,6 +244,32 @@ class CameraTest(tk.Tk):
         lo_y, hi_y = np.percentile(ys, [0.5, 99.5])
         return int(round(max(hi_x - lo_x, hi_y - lo_y))) + 1
 
+    def white_balance(self):
+        """A white piece should look white: from how it looks now, work out how much to turn each colour
+        channel up or down (the camera's colour tint under this light), and correct every piece with it."""
+        boxes = [t["box"] for t in self.tracks.values()]
+        frame = self.camera.latest if self.camera else None
+        if self.detector is None or len(boxes) != 1 or frame is None:
+            self.status.configure(text="For the colours: learn the empty surface first, then put exactly one white "
+                                       "piece under the camera and press 3. again.")
+            return
+        b = boxes[0]
+        part = frame[b.y0:b.y1, b.x0:b.x1].astype(np.float32)
+        diff = np.abs(part - self.detector.background[b.y0:b.y1, b.x0:b.x1]).max(2)
+        px = part[diff > self.detector.threshold]
+        if len(px) < 50:
+            self.status.configure(text="Couldn't see the white piece clearly. Try again.")
+            return
+        bright = px[px.sum(1) >= np.percentile(px.sum(1), 50)]   # its lit top, not its shadowed sides
+        mean = bright.mean(0)
+        gains = np.clip(mean.mean() / np.maximum(mean, 1), 0.5, 2.0)
+        self.settings["colour_gains"] = [round(float(g), 3) for g in gains]
+        save_settings(self.settings)
+        self.forget()
+        r, g, bl = self.settings["colour_gains"]
+        self.status.configure(text=f"Colours set: red x{r:.2f}, green x{g:.2f}, blue x{bl:.2f} "
+                                   "(the camera's tint is taken out before the model looks). Saved.")
+
     # ------------------------------------------------------------------ the area to look at
     def _area_chosen(self):
         shape = area_mod.SHAPES[self.area_choice.get()]
@@ -305,12 +342,13 @@ class CameraTest(tk.Tk):
             seen.add(best)
             if t["still"] >= STILL_FRAMES and t["result"] is None and not t["busy"] and self.recognizer:
                 t["busy"] = True
-                threading.Thread(target=self._recognise, args=(best, crop(frame, b), b), daemon=True).start()
+                threading.Thread(target=self._recognise, args=(best, frame, b), daemon=True).start()
         for tid in [t for t in self.tracks if t not in seen]:   # taken away
             del self.tracks[tid]
         self._show_list()
 
-    def _recognise(self, tid, picture, blob):
+    def _recognise(self, tid, frame, blob):
+        picture = correct_colours(crop(frame, blob), self.settings.get("colour_gains"))
         pred = self.recognizer.predict(picture)
         part, p_conf = pred.parts[0]
         cid, c_conf = pred.colors[0]
@@ -319,9 +357,10 @@ class CameraTest(tk.Tk):
         bin_name, reason = rules_mod.choose_bin(self.rules, self.props, part, p_conf, colour, c_conf, 1,
                                                 category, g_conf, pred.printed)
         k = self.settings.get("px_per_mm")
-        size = f"{blob.long_side / k:.0f} mm long" if k else ""
+        size = f"{self._exact_length(frame, blob) / k:.0f} mm long" if k else ""
         result = {"part": part, "p": p_conf, "colour": colour, "c": c_conf, "bin": bin_name, "reason": reason,
-                  "picture": picture, "size": size}
+                  "picture": picture, "size": size, "next": pred.parts[1:3],
+                  "next_colours": [(self.color_names.get(c, "?"), q) for c, q in pred.colors[1:3]]}
         self.done.put((tid, result))   # picked up by _tick (Tk is only touched from its own thread)
 
     def _got(self, tid, result):
@@ -348,9 +387,11 @@ class CameraTest(tk.Tk):
             pic = ttk.Label(row, image=img)
             pic.image = img
             pic.pack(side="left")
-            text = (f"{n}. {r['part']}  {self.names.get(r['part'], '')}\n"
-                    f"{r['colour']} · part {r['p']:.0%}, colour {r['c']:.0%}"
-                    + (f" · {r['size']}" if r["size"] else "") + f"\nBin: {r['bin']}")
+            text = (f"{n}. {r['part']}  {self.names.get(r['part'], '')} ({r['p']:.0%})\n"
+                    + "".join(f"   or {p}  {self.names.get(p, '')} ({q:.0%})\n" for p, q in r["next"])
+                    + f"{r['colour']} ({r['c']:.0%})"
+                    + "".join(f", or {c} ({q:.0%})" for c, q in r["next_colours"])
+                    + (f"\n{r['size']}" if r["size"] else "") + f"\nBin: {r['bin']}")
             ttk.Label(row, text=text, wraplength=240, justify="left").pack(side="left", padx=6)
 
     def _draw(self, frame):

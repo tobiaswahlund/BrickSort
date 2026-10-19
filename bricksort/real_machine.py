@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from . import catalog, config
 from .camera_test import Camera as LiveFeed
-from .camera_test import find_cameras, load_settings, save_settings
+from .camera_test import correct_colours, find_cameras, load_settings, save_settings
 from .ldraw import Library
 from .sorter import area as area_mod
 from .sorter import hardware, properties
@@ -43,6 +43,16 @@ class WebcamFeed(hardware.Camera):
 
     def frame(self):
         return self.feed.latest
+
+
+class ColourCorrected:
+    """The model, looking at each piece with the camera's colour tint taken out (Camera test, step 3)."""
+
+    def __init__(self, recognizer, gains):
+        self.recognizer, self.gains = recognizer, gains
+
+    def predict(self, picture):
+        return self.recognizer.predict(correct_colours(picture, self.gains))
 
 
 class HandMoved(hardware.Belt, hardware.Diverter):
@@ -250,7 +260,8 @@ class RealMachine(tk.Tk):
             self.link.camera_to_end_mm = self.settings["camera_to_end_mm"]
             self.link.chute_lead_s = self.settings["chute_lead_s"]
         self.rules = rules_mod.load()
-        self.machine = Machine(camera, belt, belt, self.recognizer, self.color_names, self.props,
+        model = ColourCorrected(self.recognizer, self.settings.get("colour_gains")) if self.recognizer else None
+        self.machine = Machine(camera, belt, belt, model, self.color_names, self.props,
                                hardware.Clock(), self.rules)
         self.machine.calibrate(frames)
         self._apply_area()
