@@ -384,7 +384,7 @@ class CameraTest(tk.Tk):
         are saved as real photos and used the next time the model is trained."""
         import subprocess
         import sys
-        subprocess.Popen([sys.executable, "-m", "bricksort.demo", "--rest"], cwd=config.PROJECT_DIR)
+        subprocess.Popen([sys.executable, "-m", "bricksort.demo", "--rest", "--real"], cwd=config.PROJECT_DIR)
 
     def _keep(self, picture, pred, bin_name, reason):
         """Save the picture and the guesses where Review rest bin / Spot check look (as the machine does)."""

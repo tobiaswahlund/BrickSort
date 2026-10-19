@@ -300,19 +300,25 @@ class Demo(tk.Tk):
         win.bind("<Destroy>", lambda e: e.widget is win and self.after(
             100, self.review_unknown, (*_skip, path) if path.exists() else _skip))
 
-    def review_rest(self):
-        """Go through the pieces the sorting machine put in the rest bin, and say what they were."""
-        self.review_log(config.REST_LOG, spot_check=False)
+    def review_rest(self, only_real=False):
+        """Go through the pieces the sorting machine put in the rest bin, and say what they were.
+        only_real: just the real camera's pictures (opened from the camera test), not the virtual machine's."""
+        self.review_log(config.REST_LOG, spot_check=False, only_real=only_real)
 
     def spot_check(self):
         """Check pieces the machine did sort (least sure first): gives a real-world accuracy figure."""
         self.review_log(config.SORTED_LOG, spot_check=True)
 
-    def review_log(self, folder, spot_check):
+    def review_log(self, folder, spot_check, only_real=False, skipped=frozenset()):
+        """skipped: pictures passed over with Skip this time (they stay for later)."""
         todo = []
         for png in (folder.glob("*.png") if folder.exists() else []):
+            if png.name in skipped:
+                continue
             meta_file = png.with_suffix(".json")
             meta = json.loads(meta_file.read_text(encoding="utf-8")) if meta_file.exists() else {}
+            if only_real and not meta.get("real"):
+                continue
             todo.append((meta.get("parts", [["", 0]])[0][1] if spot_check else 0, png.name, png, meta))
         if not todo:
             messagebox.showinfo("All done", "Nothing left to check here.")
@@ -349,9 +355,15 @@ class Demo(tk.Tk):
 
         win = self.review(crop, truth=None, pred=pred, on_saved=done, simulated=simulated,
                           extra=[("Not LEGO", not_lego), ("Several pieces", several)])
-        # answered -> show the next one; "Skip" keeps it for later and stops
-        win.bind("<Destroy>", lambda e: e.widget is win and not png.exists()
-                 and self.after(100, self.review_log, folder, spot_check))
+        # answered -> the next one; Skip -> the next one too, keeping this one for later; closed -> stop
+        def next_one(e):
+            if e.widget is not win:
+                return
+            if not png.exists():
+                self.after(100, self.review_log, folder, spot_check, only_real, skipped)
+            elif win.skipped:
+                self.after(100, self.review_log, folder, spot_check, only_real, skipped | {png.name})
+        win.bind("<Destroy>", next_one)
 
     def _record_spot_check(self, pred, part_id, color):
         """Keep score of spot checks: how often the machine was right in the real world."""
@@ -594,7 +606,8 @@ class ReviewWindow(tk.Toplevel):
         self.entry.pack(side="left", padx=6)
         self.entry.bind("<Return>", lambda e: self.choose(self.entry.get()))
         ttk.Button(bottom, text="Save", command=lambda: self.choose(self.entry.get())).pack(side="left")
-        ttk.Button(bottom, text="Skip", command=self.destroy).pack(side="right")
+        self.skipped = False
+        ttk.Button(bottom, text="Skip", command=self.skip).pack(side="right")
         for label, command in extra:
             ttk.Button(bottom, text=label, command=command).pack(side="right", padx=4)
         if not source:
@@ -605,6 +618,11 @@ class ReviewWindow(tk.Toplevel):
         self.entry.bind("<KeyRelease>", self._hint)
         self.images = imgs
         self.entry.focus_set()
+
+    def skip(self):
+        """Not now: on to the next one (this one stays for later)."""
+        self.skipped = True
+        self.destroy()
 
     def _hint(self, _):
         part = self.app.by_id.get(self.entry.get().strip())
@@ -666,8 +684,8 @@ class CustomPieceForm(tk.Toplevel):
 
 def run():
     app = Demo()
-    if "--rest" in sys.argv:      # opened from the sorting machine's buttons
-        app.after(300, app.review_rest)
+    if "--rest" in sys.argv:      # opened from the sorting machine's buttons (--real: from the camera test)
+        app.after(300, app.review_rest, "--real" in sys.argv)
     elif "--spot" in sys.argv:
         app.after(300, app.spot_check)
     app.mainloop()
