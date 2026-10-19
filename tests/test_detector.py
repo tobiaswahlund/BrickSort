@@ -71,3 +71,27 @@ def test_merge_close_and_crop():
     assert len(merge_close([a, b], gap=25)) == 1
     pic = crop(belt(), Blob(100, 100, 140, 120, 800, 120, 110), size=64)
     assert pic.size == (64, 64)
+
+
+def test_only_pieces_inside_the_chosen_area_count():
+    from bricksort.sorter import area
+    frame = belt(9)
+    frame[40:80, 40:100] = (200, 30, 30)      # inside a circle in the middle-left
+    frame[150:200, 250:300] = (230, 230, 230)  # outside it, at the bottom right
+    d = ready_detector()
+    d.set_area(area.mask({"shape": "circle", "box": [0.0, 0.0, 0.6, 0.8]}, W, H))
+    blobs = d.find(frame)
+    assert len(blobs) == 1 and blobs[0].x0 < 120
+    d.set_area(area.mask({"shape": "rect", "box": [0.7, 0.55, 1.0, 1.0]}, W, H))
+    assert len(d.find(frame)) == 1 and d.find(frame)[0].x0 > 200
+    d.set_area(None)
+    assert len(d.find(frame)) == 2
+
+
+def test_area_mask_shapes():
+    from bricksort.sorter import area
+    assert area.mask(None, 10, 10) is None
+    r = area.mask({"shape": "rect", "box": [0.5, 0.0, 1.0, 1.0]}, 10, 10)
+    assert r[:, 6:].all() and not r[:, :4].any()
+    c = area.mask({"shape": "circle", "box": [0.0, 0.0, 1.0, 1.0]}, 20, 20)
+    assert c[10, 10] and not c[0, 0]            # the middle, not the corner

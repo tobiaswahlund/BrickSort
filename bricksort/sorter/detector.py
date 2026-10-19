@@ -42,6 +42,8 @@ class Detector:
         self.background = None      # average look of the empty belt (full size)
         self.noise = None           # how much the empty belt itself varies (texture, belt moving)
         self._seen = []
+        self.area = None            # (H, W) True where to look (see area.py); None: the whole picture
+        self._area_blocks = None
 
     def learn_background(self, frame):
         """Call with pictures of the empty belt, ideally at different belt positions: a textured
@@ -81,7 +83,16 @@ class Detector:
         for dy in (-1, 0, 1):
             for dx in (-1, 0, 1):
                 grown |= p[1 + dy:p.shape[0] - 1 + dy, 1 + dx:p.shape[1] - 1 + dx]
+        if self.area is not None:   # only inside the chosen area
+            if self._area_blocks is None or self._area_blocks.shape != grown.shape:
+                self._area_blocks = _blocks(self.area[..., None].astype(np.float32))[..., 0] > 0.5
+            if self._area_blocks.shape == grown.shape:
+                grown &= self._area_blocks
         return grown
+
+    def set_area(self, mask):
+        """Look only where mask (H, W) is True; None: the whole picture."""
+        self.area, self._area_blocks = mask, None
 
     def find(self, frame):
         """List of Blobs (objects) in the picture."""

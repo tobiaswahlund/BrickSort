@@ -73,8 +73,10 @@ says how). Never unplug the motor while the driver has power.
    settings at the top (roller diameter, microsteps, chute angles), choose your board and port, and press
    **Upload**.
 2. BrickSort menu → **Camera test**: point the webcam at the belt, press **Learn the empty surface**, then
-   put a 2x4 brick under it, lined up with the picture's edges, and press **Measure**. That's how many
-   pixels make one millimetre.
+   put a 2x4 brick (or another brick or plate you choose in the list) under it, lined up with the
+   picture's edges, and press **Measure**. That's how many pixels make one millimetre. If the camera
+   sees more than the belt, choose **Area** → Rectangle or Circle and drag it over the belt: everything
+   outside it is ignored (the Real machine window has the same choice).
 3. BrickSort menu → **Real machine**: choose the Arduino's port and press **Connect**. Try **Run the belt
    3 s** (does it go the right way and at a sensible speed?) and **Turn the chute** to each bin.
 4. Enter the belt speed and the distance from the camera's middle to the chute.

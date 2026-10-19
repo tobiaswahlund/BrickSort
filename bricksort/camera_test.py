@@ -6,10 +6,12 @@ Run:  python -m bricksort.camera_test   (or Camera test in the BrickSort menu)
 
 1. Point the camera straight down at a plain surface (ideally the belt you'll use), about 20 cm up.
 2. Learn the empty surface: nothing under the camera, then press the button.
-3. Measure: put a 2x4 brick (studs up, lined up with the picture's edges) under it and press the
-   button. Now BrickSort knows how many pixels are one millimetre (it checks piece sizes with that).
+3. Measure: put a known piece (a 2x4 brick, or choose another; studs up, lined up with the picture's
+   edges) under it and press the button. Now BrickSort knows how many pixels are one millimetre.
+   Area: only a rectangle or circle of the picture can be looked at (drag it on the picture), e.g. just
+   the belt; the rest is ignored.
 4. Put pieces under the camera, a few cm apart. Once a piece lies still, it's recognised.
-Settings are kept in real_machine.json (camera, pixels per mm).
+Settings are kept in real_machine.json (camera, pixels per mm, area).
 """
 import json
 import queue
@@ -23,6 +25,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageTk
 
 from . import catalog, config
 from .ldraw import Library
+from .sorter import area as area_mod
 from .sorter import properties
 from .sorter import rules as rules_mod
 from .sorter.detector import Detector, crop
@@ -30,7 +33,9 @@ from .ui import MUTED, ImageBox, Label, use_logo
 
 SETTINGS = config.PROJECT_DIR / "real_machine.json"
 DEFAULTS = {"camera": 0, "px_per_mm": None, "width": 1280, "height": 720}
-BRICK_2X4_MM = 32.0       # a 2x4 brick seen from above: 32 x 16 mm
+MM_PER_STUD = 8.0
+# pieces to measure with: rectangular, so the longest side seen from above is easy to know
+MEASURE_WITH = ("3001", "3003", "3010", "3009", "3008", "3020", "3666", "3460", "3795")
 STILL_FRAMES = 6          # a piece is recognised once it has stayed put this many pictures
 
 
@@ -119,8 +124,17 @@ class CameraTest(tk.Tk):
         self.cam_choice.bind("<<ComboboxSelected>>", lambda e: self._switch_camera())
         self.learn_btn = ttk.Button(bar, text="1. Learn the empty surface", command=self.learn)
         self.learn_btn.pack(side="left")
-        self.measure_btn = ttk.Button(bar, text="2. Measure with a 2x4 brick", command=self.measure)
-        self.measure_btn.pack(side="left", padx=6)
+        self.measure_btn = ttk.Button(bar, text="2. Measure with", command=self.measure)
+        self.measure_btn.pack(side="left", padx=(6, 2))
+        self.measure_part = ttk.Combobox(bar, width=26, values=[self._measure_label(p) for p in MEASURE_WITH])
+        self.measure_part.set(self._measure_label("3001"))
+        self.measure_part.pack(side="left", padx=(0, 6))
+        ttk.Label(bar, text="Area").pack(side="left", padx=(6, 2))
+        self.area_choice = ttk.Combobox(bar, width=14, state="readonly", values=list(area_mod.SHAPES))
+        shape = (self.settings.get("area") or {}).get("shape")
+        self.area_choice.set({"rect": "Rectangle", "circle": "Circle"}.get(shape, "Whole picture"))
+        self.area_choice.pack(side="left", padx=(0, 6))
+        self.area_choice.bind("<<ComboboxSelected>>", lambda e: self._area_chosen())
         ttk.Button(bar, text="Forget the pieces", command=self.forget).pack(side="left")
         self.scale_text = ttk.Label(bar, text="", foreground=MUTED)
         self.scale_text.pack(side="right")
@@ -129,6 +143,7 @@ class CameraTest(tk.Tk):
         view.grid(row=1, column=0, sticky="nsew")
         self.view = ImageBox(view, 800, 450)
         self.view.pack(fill="both", expand=True, padx=8, pady=6)
+        self.picker = area_mod.AreaPicker(self.view, self._area_drawn)
 
         side = ttk.LabelFrame(self, text="Pieces recognised")
         side.grid(row=1, column=1, sticky="nsew", padx=(8, 0))
@@ -180,19 +195,67 @@ class CameraTest(tk.Tk):
         self.forget()
         self.status.configure(text="Learning the empty surface: keep it clear for a moment …")
 
+    def _measure_label(self, pid):
+        p = self.props.get(pid, {})
+        return f"{pid}  {p.get('name', '')} ({p.get('length', 0) * MM_PER_STUD:g} mm)" if p else pid
+
     def measure(self):
+        pid = self.measure_part.get().split()[0] if self.measure_part.get().split() else ""
+        length = self.props.get(pid, {}).get("length")
+        if not length:
+            self.status.configure(text=f"I don't know how long {pid or 'that piece'} is. Choose one from the list, "
+                                       "or type the number of a rectangular brick or plate.")
+            return
         boxes = [t["box"] for t in self.tracks.values()]
         if self.detector is None or len(boxes) != 1:
-            self.status.configure(text="To measure: learn the empty surface first, then put exactly one 2x4 brick "
+            self.status.configure(text=f"To measure: learn the empty surface first, then put exactly one {pid} "
                                        "under the camera, studs up and lined up with the picture's edges.")
             return
-        b = boxes[0]
-        long_px = max(b.x1 - b.x0, b.y1 - b.y0)
-        self.settings["px_per_mm"] = long_px / BRICK_2X4_MM
+        long_px = self._exact_length(self.camera.latest, boxes[0])
+        self.settings["px_per_mm"] = long_px / (length * MM_PER_STUD)
         save_settings(self.settings)
         self._show_scale()
         self.status.configure(text=f"Measured: {self.settings['px_per_mm']:.2f} pixels per mm "
-                                   f"(the brick was {long_px} pixels long). Saved.")
+                                   f"({pid} is {length * MM_PER_STUD:g} mm and was {long_px} pixels long). Saved.")
+
+    def _exact_length(self, frame, b):
+        """The piece's longest side in pixels, to the pixel: the finder's box is a little bigger than the
+        piece (it works on 4x4 blocks and closes small gaps), so look again at every pixel in it."""
+        pad = 8
+        y0, y1 = max(0, b.y0 - pad), min(frame.shape[0], b.y1 + pad)
+        x0, x1 = max(0, b.x0 - pad), min(frame.shape[1], b.x1 + pad)
+        diff = np.abs(frame[y0:y1, x0:x1].astype(np.float32)
+                      - self.detector.background[y0:y1, x0:x1]).max(2)
+        ys, xs = np.nonzero(diff > self.detector.threshold)
+        if len(xs) < 20:
+            return max(b.x1 - b.x0, b.y1 - b.y0)
+        lo_x, hi_x = np.percentile(xs, [0.5, 99.5])   # a stray noisy pixel doesn't stretch it
+        lo_y, hi_y = np.percentile(ys, [0.5, 99.5])
+        return int(round(max(hi_x - lo_x, hi_y - lo_y))) + 1
+
+    # ------------------------------------------------------------------ the area to look at
+    def _area_chosen(self):
+        shape = area_mod.SHAPES[self.area_choice.get()]
+        if shape is None:
+            self._area_drawn(None)
+            return
+        self.picker.begin(shape)
+        self.status.configure(text=f"Drag on the picture to draw the {self.area_choice.get().lower()}: "
+                                   "only what's inside it is looked at.")
+
+    def _area_drawn(self, area):
+        self.settings["area"] = area
+        save_settings(self.settings)
+        self._apply_area()
+        self.forget()
+        self.status.configure(text="Looking at the whole picture." if area is None else
+                              "Area set: only pieces inside it are found.")
+
+    def _apply_area(self):
+        frame = self.camera.latest if self.camera else None
+        if self.detector is not None and frame is not None:
+            h, w = frame.shape[:2]
+            self.detector.set_area(area_mod.mask(self.settings.get("area"), w, h))
 
     def forget(self):
         self.tracks = {}
@@ -210,8 +273,9 @@ class CameraTest(tk.Tk):
                     for f in self.learning:
                         self.detector.learn_background(f)
                     self.learning = None
+                    self._apply_area()
                     self.status.configure(text="Learned. Now put pieces under the camera, a few cm apart. "
-                                               "Measure once with a 2x4 brick (button 2) so sizes are known.")
+                                               "Measure once with a known piece (button 2) so sizes are known.")
             while not self.done.empty():
                 self._got(*self.done.get())
             blobs = self.detector.find(frame) if self.detector else []
@@ -290,7 +354,7 @@ class CameraTest(tk.Tk):
             ttk.Label(row, text=text, wraplength=240, justify="left").pack(side="left", padx=6)
 
     def _draw(self, frame):
-        img = Image.fromarray(frame)
+        img = area_mod.draw(Image.fromarray(frame), self.picker.drawing() or self.settings.get("area"))
         d = ImageDraw.Draw(img)
         try:
             font = ImageFont.truetype("arialbd.ttf", 28)

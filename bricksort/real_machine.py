@@ -24,6 +24,7 @@ from . import catalog, config
 from .camera_test import Camera as LiveFeed
 from .camera_test import find_cameras, load_settings, save_settings
 from .ldraw import Library
+from .sorter import area as area_mod
 from .sorter import hardware, properties
 from .sorter import rules as rules_mod
 from .sorter.machine import Machine
@@ -97,6 +98,7 @@ class RealMachine(tk.Tk):
         view.pack(fill="both", expand=True)
         self.view = ImageBox(view, 820, 460)
         self.view.pack(fill="both", expand=True, padx=8, pady=6)
+        self.picker = area_mod.AreaPicker(self.view, self._area_drawn)
         log_box = ttk.LabelFrame(left, text="What it decided")
         log_box.pack(fill="x", pady=(8, 0))
         self.log = tk.Text(log_box, height=8, state="disabled", font=("Consolas", 9), wrap="word", relief="flat")
@@ -127,6 +129,12 @@ class RealMachine(tk.Tk):
         self.direction = ttk.Combobox(conn, width=16, state="readonly", values=["left to right", "right to left"])
         self.direction.set("left to right" if self.settings["belt_direction"] > 0 else "right to left")
         self.direction.grid(row=6, column=1, sticky="w", pady=2)
+        ttk.Label(conn, text="Look at").grid(row=8, column=0, sticky="w")
+        self.area_choice = ttk.Combobox(conn, width=16, state="readonly", values=list(area_mod.SHAPES))
+        shape = (self.settings.get("area") or {}).get("shape")
+        self.area_choice.set({"rect": "Rectangle", "circle": "Circle"}.get(shape, "Whole picture"))
+        self.area_choice.grid(row=8, column=1, sticky="w", pady=2)
+        self.area_choice.bind("<<ComboboxSelected>>", lambda e: self._area_chosen())
         k = self.settings.get("px_per_mm")
         self.scale_text = Label(conn, text=f"Camera: {k:.2f} pixels per mm (from the camera test)" if k else
                                 "Not measured: do 2. Measure in the camera test first.", foreground=MUTED,
@@ -245,10 +253,32 @@ class RealMachine(tk.Tk):
         self.machine = Machine(camera, belt, belt, self.recognizer, self.color_names, self.props,
                                hardware.Clock(), self.rules)
         self.machine.calibrate(frames)
+        self._apply_area()
         self.counts = {}
         self.write("Learned the empty belt. Press Start sorting.")
         if self.link and not self.running:
             self.link.stop()
+
+    def _area_chosen(self):
+        shape = area_mod.SHAPES[self.area_choice.get()]
+        if shape is None:
+            self._area_drawn(None)
+        else:
+            self.picker.begin(shape)
+            self.write(f"Drag on the picture to draw the {self.area_choice.get().lower()}: only what's inside "
+                       "it is looked at (e.g. just the belt).")
+
+    def _area_drawn(self, area):
+        self.settings["area"] = area
+        save_settings(self.settings)
+        self._apply_area()
+        self.write("Looking at the whole picture." if area is None else "Area set: only pieces inside it count.")
+
+    def _apply_area(self):
+        frame = self.feed.latest if self.feed else None
+        if self.machine is not None and frame is not None:
+            h, w = frame.shape[:2]
+            self.machine.detector.set_area(area_mod.mask(self.settings.get("area"), w, h))
 
     def toggle(self):
         if self.machine is None:
@@ -282,7 +312,7 @@ class RealMachine(tk.Tk):
         self.after(50, self._tick)
 
     def _draw(self, frame, blobs):
-        img = Image.fromarray(frame)
+        img = area_mod.draw(Image.fromarray(frame), self.picker.drawing() or self.settings.get("area"))
         d = ImageDraw.Draw(img)
         w, h = img.size
         d.line((w // 2, 0, w // 2, h), fill=(255, 255, 255), width=1)
