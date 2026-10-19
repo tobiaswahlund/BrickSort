@@ -9,7 +9,7 @@ import pytest
 
 class PretendArduino:
     """Stands in for serial.Serial: keeps what the firmware would do, answers what it would answer."""
-    bins = 6
+    bins = 5   # as set in the firmware (BIN_COUNT): here the five bins below
 
     def __init__(self, port, baud, timeout=1):
         self.port, self.baud = port, baud
