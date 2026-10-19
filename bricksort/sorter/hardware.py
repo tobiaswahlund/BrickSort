@@ -77,24 +77,41 @@ class WebcamCamera(Camera):
 
 
 class SerialMachine(Belt, Diverter):
-    """Belt motor + bin flaps run by a microcontroller on a USB serial port.
+    """Belt motor + bin chute run by a microcontroller on a USB serial port
+    (firmware/bricksort_machine/bricksort_machine.ino for an Arduino).
 
-    It sends simple text lines the microcontroller acts on:
+    It sends simple text lines the microcontroller acts on, and it answers OK to each:
       "BELT 50"   run the belt at 50 mm/s ("BELT 0" stops it)
-      "BIN 3"     move the flap/arm for bin number 3 now
-    The timing (when the piece reaches the flap) is handled here, so the
-    microcontroller code can stay very simple.
+      "BIN 3"     turn the chute to bin number 3 now (0 = the first bin)
+      "PING"      answered with PONG
+    The timing (when the piece reaches the chute) is handled here, so the
+    microcontroller code can stay very simple. bins: the bin names in the order
+    the chute reaches them (the rest bin last).
     """
 
-    def __init__(self, port="COM3", bins=(), speed_mm_s=50.0, camera_to_end_mm=300.0, baud=115200):
+    def __init__(self, port="COM3", bins=(), speed_mm_s=50.0, camera_to_end_mm=300.0, baud=115200,
+                 chute_lead_s=0.4):
         import serial
         self.link = serial.Serial(port, baud, timeout=1)
+        # an Arduino restarts when the port opens: wait for it to say it's ready (about 2 s)
+        end = time.monotonic() + 4
+        while time.monotonic() < end and b"READY" not in self.link.readline():
+            pass
         self.bin_numbers = {name: i for i, name in enumerate(bins)}
         self.speed_mm_s, self.camera_to_end_mm = speed_mm_s, camera_to_end_mm
+        self.chute_lead_s = chute_lead_s   # the chute turns this long before the piece arrives
         self.clock = Clock()
+        self.lock = threading.Lock()       # the timers may want to talk at the same time
 
     def _say(self, line):
-        self.link.write((line + "\n").encode())
+        with self.lock:
+            self.link.reset_input_buffer()
+            self.link.write((line + "\n").encode())
+            return self.link.readline().decode(errors="replace").strip()
+
+    def ping(self):
+        """True if the microcontroller answers."""
+        return self._say("PING") == "PONG"
 
     def start(self):
         self._say(f"BELT {self.speed_mm_s:g}")
@@ -102,6 +119,16 @@ class SerialMachine(Belt, Diverter):
     def stop(self):
         self._say("BELT 0")
 
+    def turn_to(self, bin_number):
+        return self._say(f"BIN {bin_number}")
+
     def send(self, bin_name, arrive_at):
-        delay = max(0.0, arrive_at - self.clock.now() - 0.1)  # flap moves just before it arrives
-        threading.Timer(delay, self._say, [f"BIN {self.bin_numbers.get(bin_name, len(self.bin_numbers) - 1)}"]).start()
+        delay = max(0.0, arrive_at - self.clock.now() - self.chute_lead_s)
+        number = self.bin_numbers.get(bin_name, len(self.bin_numbers) - 1)   # unknown: the last (rest) bin
+        threading.Timer(delay, self.turn_to, [number]).start()
+
+    def close(self):
+        try:
+            self.stop()
+        finally:
+            self.link.close()
