@@ -105,8 +105,9 @@ window is shown with what each button does in [docs/WINDOWS.md](docs/WINDOWS.md)
 
 ## Limitations and roadmap
 
-- The sorting machine is simulated so far. The hardware interface is ready; a real webcam, belt,
-  servo flap and Arduino are next.
+- The real machine isn't built yet. The software for it is ready: a webcam camera test, a Real machine
+  window, and the Arduino program for the belt motor and chute. Parts, wiring and steps are in
+  [docs/MACHINE.md](docs/MACHINE.md).
 - About 1,300 parts. Rarer parts are only recognised by category.
 - The launchers are Windows-only; the Python commands work elsewhere too.
 - Colours on new photos (44%, see Results), Dark Bluish Gray above all. Next: more real photos of
