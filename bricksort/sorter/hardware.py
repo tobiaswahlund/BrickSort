@@ -8,10 +8,9 @@ The sorting logic only talks to these four things, so the virtual conveyor
   Belt       moves at a known speed
   Diverter   sends the piece that arrives at the end of the belt at a given time to a bin
 
-Real versions for later are at the bottom: a USB webcam (needs the free
-'opencv-python' library) and a microcontroller such as an Arduino driving the
-belt motor and the bin flaps over USB (needs 'pyserial'). Neither is installed
-yet; they're only needed once there's real hardware.
+Real versions are at the bottom: a USB webcam (OpenCV) and a microcontroller such as
+an Arduino driving the belt motor and the bin chute over USB (pyserial). The camera
+test (camera_test.py) tries the webcam on its own, before there's a belt.
 """
 import threading
 import time
@@ -61,9 +60,11 @@ class WebcamCamera(Camera):
     """
 
     def __init__(self, index=0, width=1280, height=720, px_per_mm=4.0, belt_direction=+1):
-        import cv2  # pip install opencv-python
+        import cv2
         self.cv2 = cv2
-        self.cap = cv2.VideoCapture(index)
+        import sys
+        # DirectShow on Windows: opens in about a second (the default can take ten)
+        self.cap = cv2.VideoCapture(index, cv2.CAP_DSHOW) if sys.platform == "win32" else cv2.VideoCapture(index)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         self.px_per_mm, self.belt_direction = px_per_mm, belt_direction
@@ -86,7 +87,7 @@ class SerialMachine(Belt, Diverter):
     """
 
     def __init__(self, port="COM3", bins=(), speed_mm_s=50.0, camera_to_end_mm=300.0, baud=115200):
-        import serial  # pip install pyserial
+        import serial
         self.link = serial.Serial(port, baud, timeout=1)
         self.bin_numbers = {name: i for i, name in enumerate(bins)}
         self.speed_mm_s, self.camera_to_end_mm = speed_mm_s, camera_to_end_mm

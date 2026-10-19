@@ -33,6 +33,10 @@ TOOLS = [
         ("Sorting machine", ["bricksort.conveyor_demo"],
          "The virtual sorting machine: pieces on a belt, sorted into bins by your rules."),
     ]),
+    ("Real world", [
+        ("Camera test", ["bricksort.camera_test"],
+         "A real webcam looking down: put pieces under it by hand and see what it finds and recognises."),
+    ]),
     ("Your own photos", [
         ("Cut out pieces", ["bricksort.cut"],
          "One picture per piece from photos of several pieces, for training (my_photos/_to_cut)."),
@@ -300,7 +304,7 @@ def make_shortcut():
 def warm_helper():
     """(--helper) Load everything the parts need, then wait for the menu to say which part to be:
     "run <window id> <module> [arguments]". Becomes that part, shown inside the menu's window."""
-    from . import colour_review, conveyor_demo, cut, demo, training_app  # noqa: F401  (the slow part)
+    from . import camera_test, colour_review, conveyor_demo, cut, demo, training_app  # noqa: F401  (the slow part)
     line = sys.stdin.readline().split()
     if len(line) < 3 or line[0] != "run":
         return   # the menu closed

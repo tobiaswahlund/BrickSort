@@ -18,6 +18,9 @@ dependencies = [
     "mujoco>=3.2,<4",
     "numpy",
     "pillow",
+    # the real machine: a webcam (camera test) and the Arduino over USB
+    "opencv-python",
+    "pyserial",
 ]
 
 [project.gui-scripts]
