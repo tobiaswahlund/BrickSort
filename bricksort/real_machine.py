@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from . import catalog
 from .camera_test import Camera as LiveFeed
-from .camera_test import correct_colours, find_cameras, load_settings, save_settings
+from .camera_test import CameraSettings, correct_colours, find_cameras, load_settings, save_settings
 from .ldraw import Library
 from .sorter import area as area_mod
 from .sorter import hardware, properties
@@ -129,6 +129,8 @@ class RealMachine(tk.Tk):
         self.port.set(self.settings["port"] if self.settings["port"] in self.port["values"] else NO_ARDUINO)
         self.port.grid(row=1, column=1, sticky="we", pady=2)
         self.connect_btn = ttk.Button(conn, text="Connect", command=self.connect)
+        ttk.Button(conn, text="Camera settings…", command=lambda: self.feed and CameraSettings(
+            self, self.feed, self.settings)).grid(row=0, column=1, sticky="e")
         self.connect_btn.grid(row=2, column=1, sticky="w", pady=(2, 0))
         self.vars = {}
         rows = [("speed_mm_s", "Belt speed (mm/s)"), ("camera_to_end_mm", "Camera middle → chute (mm)"),
@@ -197,7 +199,7 @@ class RealMachine(tk.Tk):
         self.cam_choice.configure(values=[str(i) for i in found])
         index = self.settings["camera"] if self.settings["camera"] in found else found[0]
         self.cam_choice.set(str(index))
-        self.feed = LiveFeed(index, self.settings["width"], self.settings["height"])
+        self.feed = LiveFeed(index, self.settings["width"], self.settings["height"], self.settings.get("camera_controls"))
         self.status.configure(text="Camera on. Choose the Arduino and press Connect (or run with the camera only), "
                                    "then Learn the empty belt.")
         self._tick()

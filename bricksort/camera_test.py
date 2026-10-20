@@ -74,21 +74,62 @@ def find_cameras(n=4):
     return found
 
 
-class Camera:
-    """Reads pictures from a webcam in the background, so the window always has the newest one."""
+# The webcam's own settings: (key, name, OpenCV property, lowest, highest, its "auto" switch:
+# (property, value for automatic, value for manual) or None). Not every camera has every one.
+CONTROLS = [
+    ("exposure", "Exposure (brighter →)", "CAP_PROP_EXPOSURE", -11, -2, ("CAP_PROP_AUTO_EXPOSURE", 0.75, 0.25)),
+    ("focus", "Focus (nearer →)", "CAP_PROP_FOCUS", 0, 250, ("CAP_PROP_AUTOFOCUS", 1, 0)),
+    ("white_balance", "White balance (warmer picture →)", "CAP_PROP_WB_TEMPERATURE", 2800, 6500, ("CAP_PROP_AUTO_WB", 1, 0)),
+    ("brightness", "Brightness", "CAP_PROP_BRIGHTNESS", 0, 255, None),
+    ("contrast", "Contrast", "CAP_PROP_CONTRAST", 0, 255, None),
+    ("saturation", "Colour strength", "CAP_PROP_SATURATION", 0, 255, None),
+    ("sharpness", "Sharpness", "CAP_PROP_SHARPNESS", 0, 255, None),
+    ("gain", "Gain (brighter, more grain)", "CAP_PROP_GAIN", 0, 255, None),
+    ("zoom", "Zoom", "CAP_PROP_ZOOM", 100, 500, None),
+]
 
-    def __init__(self, index, width, height):
+
+class Camera:
+    """Reads pictures from a webcam in the background, so the window always has the newest one.
+    controls: saved camera settings ({key: value, key + "_auto": True/False}) to use from the start."""
+
+    def __init__(self, index, width, height, controls=None):
         import cv2
         self.cv2 = cv2
+        self.lock = threading.Lock()   # changing a setting while a picture is being read can upset the driver
         self.cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)   # DirectShow: opens in a second on Windows
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         self.latest, self.running = None, self.cap.isOpened()
+        if controls:
+            self.set_controls(controls)
         threading.Thread(target=self._read, daemon=True).start()
+
+    def get(self, key):
+        """The camera's current value of a setting (None if it doesn't have it)."""
+        prop = next((getattr(self.cv2, p) for k, _, p, *_ in CONTROLS if k == key), None)
+        with self.lock:
+            v = self.cap.get(prop) if prop is not None else -1
+        return None if v == -1 else v
+
+    def set_controls(self, controls):
+        """Apply settings: {key: value, key + "_auto": True/False}. Automatic ones get no fixed value."""
+        for key, _, prop, _, _, auto in CONTROLS:
+            with self.lock:
+                if auto and key + "_auto" in controls:
+                    self.cap.set(getattr(self.cv2, auto[0]), auto[1] if controls[key + "_auto"] else auto[2])
+                if key in controls and not (auto and controls.get(key + "_auto", False)):
+                    self.cap.set(getattr(self.cv2, prop), controls[key])
+
+    def driver_dialog(self):
+        """Windows' own settings window for this camera (every setting the driver has)."""
+        with self.lock:
+            self.cap.set(self.cv2.CAP_PROP_SETTINGS, 1)
 
     def _read(self):
         while self.running:
-            ok, img = self.cap.read()
+            with self.lock:
+                ok, img = self.cap.read()
             if ok:
                 self.latest = self.cv2.cvtColor(img, self.cv2.COLOR_BGR2RGB)
             else:
@@ -98,6 +139,81 @@ class Camera:
         self.running = False
         time.sleep(0.1)
         self.cap.release()
+
+
+class CameraSettings(tk.Toplevel):
+    """Exposure, focus, white balance and the rest, changed live and remembered (in real_machine.json)."""
+
+    def __init__(self, master, camera, settings):
+        super().__init__(master)
+        self.title("Camera settings")
+        self.configure(padx=12, pady=10)
+        self.resizable(False, False)
+        self.camera, self.settings = camera, settings
+        self.controls = dict(settings.get("camera_controls") or {})
+        self.vars = {}
+        row = 0
+        for key, name, _, lo, hi, auto in CONTROLS:
+            now = camera.get(key)
+            if now is None:
+                continue   # this camera doesn't have it
+            ttk.Label(self, text=name).grid(row=row, column=0, sticky="w", pady=3)
+            var = tk.DoubleVar(value=self.controls.get(key, now))
+            scale = ttk.Scale(self, from_=lo, to=hi, variable=var, length=260,
+                              command=lambda v, k=key: self._changed(k))
+            scale.grid(row=row, column=1, padx=8)
+            shown = ttk.Label(self, width=6)
+            shown.grid(row=row, column=2, sticky="w")
+            self.vars[key] = (var, shown, scale)
+            if auto:
+                a = tk.BooleanVar(value=self.controls.get(key + "_auto", True))
+                ttk.Checkbutton(self, text="Auto", variable=a, command=lambda k=key: self._auto(k)).grid(
+                    row=row, column=3, sticky="w")
+                self.vars[key + "_auto"] = a
+                scale.configure(state="disabled" if a.get() else "normal")
+            self._show(key)
+            row += 1
+        if row == 0:
+            ttk.Label(self, text="This camera doesn't let BrickSort change its settings.").grid(row=0, column=0)
+        bar = ttk.Frame(self)
+        bar.grid(row=row, column=0, columnspan=4, sticky="we", pady=(10, 0))
+        ttk.Button(bar, text="All automatic", command=self.all_auto).pack(side="left")
+        ttk.Button(bar, text="Windows' camera settings…", command=camera.driver_dialog).pack(side="left", padx=6)
+        ttk.Button(bar, text="Close", command=self.destroy).pack(side="right")
+        Label(self, text="Tip: turn Auto off for exposure, focus and white balance once the picture looks right, so "
+                         "the camera doesn't change them while you sort. Learn the empty surface again after.",
+              foreground=MUTED, wraplength=430, justify="left").grid(row=row + 1, column=0, columnspan=4,
+                                                                     sticky="w", pady=(8, 0))
+
+    def _show(self, key):
+        var, shown, _ = self.vars[key]
+        shown.configure(text=f"{var.get():.0f}")
+
+    def _changed(self, key):
+        self.controls[key] = round(self.vars[key][0].get())
+        self._show(key)
+        self._apply()
+
+    def _auto(self, key):
+        on = self.vars[key + "_auto"].get()
+        self.controls[key + "_auto"] = on
+        self.vars[key][2].configure(state="disabled" if on else "normal")
+        if not on:
+            self.controls[key] = round(self.vars[key][0].get())
+        self._apply()
+
+    def all_auto(self):
+        self.controls = {k + "_auto": True for k, *_, auto in CONTROLS if auto}
+        for k, *_ in CONTROLS:
+            if k + "_auto" in self.vars:
+                self.vars[k + "_auto"].set(True)
+                self.vars[k][2].configure(state="disabled")
+        self._apply()
+
+    def _apply(self):
+        self.camera.set_controls(self.controls)
+        self.settings["camera_controls"] = self.controls
+        save_settings(self.settings)
 
 
 class CameraTest(tk.Tk):
@@ -148,6 +264,8 @@ class CameraTest(tk.Tk):
         self.area_choice.pack(side="left", padx=(0, 6))
         self.area_choice.bind("<<ComboboxSelected>>", lambda e: self._area_chosen())
         ttk.Button(bar, text="3. Colours with a white piece", command=self.white_balance).pack(side="left", padx=(0, 6))
+        ttk.Button(bar, text="Camera settings…", command=lambda: self.camera and CameraSettings(
+            self, self.camera, self.settings)).pack(side="left")
         self.scale_text = ttk.Label(bar, text="", foreground=MUTED)
         self.scale_text.pack(side="right")
 
@@ -209,7 +327,8 @@ class CameraTest(tk.Tk):
             self.camera.close()
         self.settings["camera"] = int(self.cam_choice.get())
         save_settings(self.settings)
-        self.camera = Camera(self.settings["camera"], self.settings["width"], self.settings["height"])
+        self.camera = Camera(self.settings["camera"], self.settings["width"], self.settings["height"],
+                             self.settings.get("camera_controls"))
         self.detector = None
         self.forget()
         self.status.configure(text="Point the camera straight down at a plain surface with nothing on it, "
