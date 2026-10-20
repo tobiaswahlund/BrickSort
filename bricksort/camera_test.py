@@ -507,6 +507,7 @@ class CameraTest(tk.Tk):
                                    "bin are kept for Review rest bin.")
 
     def _show_model(self):
+        self.rules = rules_mod.load(self.remote)   # Brickognize has its own confidence level
         if self.remote:
             self.review_btn.pack_forget()
             self.model_text.configure(text="Model: Brickognize (online)")

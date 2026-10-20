@@ -174,7 +174,7 @@ class RealMachine(tk.Tk):
         self.status.grid(row=1, column=0, columnspan=2, sticky="we", pady=(6, 0))
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
-        self.rules = rules_mod.load()
+        self.rules = rules_mod.load(self.remote)   # Brickognize: its own confidence level
         self.bin_choice.configure(values=rules_mod.bin_names(self.rules))
         self.bin_choice.current(0)
 
@@ -263,7 +263,7 @@ class RealMachine(tk.Tk):
             self.link.speed_mm_s = self.settings["speed_mm_s"]
             self.link.camera_to_end_mm = self.settings["camera_to_end_mm"]
             self.link.chute_lead_s = self.settings["chute_lead_s"]
-        self.rules = rules_mod.load()
+        self.rules = rules_mod.load(self.remote)   # Brickognize: its own confidence level
         model = ColourCorrected(self.recognizer, self.settings.get("colour_gains")) if self.recognizer else None
         self.machine = Machine(camera, belt, belt, model, self.color_names, self.props,
                                hardware.Clock(), self.rules)

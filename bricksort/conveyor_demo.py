@@ -71,7 +71,7 @@ class ConveyorDemo(tk.Tk):
         """(Re)build the world and the machine from the current bins.json."""
         if getattr(self, "world", None):
             self.world.close()
-        self.rules = rules_mod.load()
+        self.rules = rules_mod.load(self.remote)
         self.rules["confidence_needed"] = self.sure.get() / 100   # the slider, not bins.json
         self.bins = rules_mod.bin_names(self.rules)
         try:
@@ -165,7 +165,7 @@ class ConveyorDemo(tk.Tk):
         self.junk, self.junk_text = tk.IntVar(value=0), tk.StringVar(value="0%")
         self.pairs, self.pairs_text = tk.IntVar(value=0), tk.StringVar(value="0%")
         # how sure the model must be before a piece goes in a bin (else the rest bin); 0 = always its best guess
-        self.sure = tk.IntVar(value=round(rules_mod.load()["confidence_needed"] * 100))
+        self.sure = tk.IntVar(value=round(rules_mod.load(self.remote)["confidence_needed"] * 100))
         self.sure_text = tk.StringVar(value=f"{self.sure.get()}%")
         for i, (label, var, shown, lo, hi, _tip) in enumerate((
                 ("Speed", self.speed, self.speed_text, 0.1, 2, ""),

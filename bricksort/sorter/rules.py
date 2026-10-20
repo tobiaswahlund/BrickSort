@@ -24,6 +24,9 @@ RULES_FILE = config.PROJECT_DIR / "bins.json"
 
 DEFAULT = {
     "confidence_needed": 0.85,   # tested: about 0% wrong in real bins, 60% of pieces sorted (2026-10-19)
+    # Brickognize's sureness runs lower than your model's (it's rarely above 90% even when right): on the
+    # 152 real test bricks, 75% sorted 92% of them with 7% wrong parts, and going higher barely helped
+    "confidence_needed_brickognize": 0.75,
     "not_lego_bin": "Not Lego",
     "rest_bin": "Rest",
     "bins": [
@@ -38,12 +41,15 @@ DEFAULT = {
 }
 
 
-def load():
+def load(brickognize=False):
+    """The bins and settings. brickognize: Brickognize is the model, so its own confidence level is used."""
     if not RULES_FILE.exists():
         RULES_FILE.write_text(json.dumps(DEFAULT, indent=2), encoding="utf-8")
     rules = json.loads(RULES_FILE.read_text(encoding="utf-8"))
     for key, value in DEFAULT.items():
         rules.setdefault(key, value)
+    if brickognize:
+        rules["confidence_needed"] = rules["confidence_needed_brickognize"]
     return rules
 
 
