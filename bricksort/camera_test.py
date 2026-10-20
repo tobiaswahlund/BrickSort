@@ -593,7 +593,7 @@ class CameraTest(tk.Tk):
             if r is None:   # not recognised yet: a plain grey box
                 d.rectangle((b.x0, b.y0, b.x1, b.y1), outline=(200, 200, 200), width=2)
                 continue
-            # like Brickognize: the box in the colour it thinks the piece is, with the part and colour on a tag
+            # like RebrickNet: the box in the colour it thinks the piece is, with the part and colour on a tag
             rgb = r["rgb"]
             d.rectangle((b.x0 - 1, b.y0 - 1, b.x1 + 1, b.y1 + 1), outline=(255, 255, 255), width=1)
             d.rectangle((b.x0, b.y0, b.x1, b.y1), outline=rgb, width=4)
