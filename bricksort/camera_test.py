@@ -424,6 +424,7 @@ class CameraTest(tk.Tk):
         size = f"{self._exact_length(frame, blob) / k:.0f} mm long" if k else ""
         result = {"part": part, "p": p_conf, "colour": colour, "c": c_conf, "bin": bin_name, "reason": reason,
                   "picture": picture, "size": size, "next": pred.parts[1:3],
+                  "rgb": tuple(self.colors.get(cid, ("", (200, 200, 200)))[1]),
                   "next_colours": [(self.color_names.get(c, "?"), q) for c, q in pred.colors[1:3]]}
         if keep and not getattr(self, "remote", False):   # Brickognize can't learn from it: nothing to keep
             self._keep(picture, pred, bin_name, reason)
@@ -465,15 +466,25 @@ class CameraTest(tk.Tk):
         d = ImageDraw.Draw(img)
         try:
             font = ImageFont.truetype("arialbd.ttf", 28)
+            small = ImageFont.truetype("arialbd.ttf", 20)
         except OSError:
-            font = ImageFont.load_default()
-        numbers = {tid: n for n, tid in enumerate((t for t in sorted(self.tracks) if self.tracks[t]["result"]), 1)}
-        for tid, t in self.tracks.items():
-            b = t["box"]
-            colour = (220, 30, 30) if t["result"] else (240, 160, 40)   # orange: still deciding
-            d.rectangle((b.x0, b.y0, b.x1, b.y1), outline=colour, width=3)
-            if tid in numbers:
-                d.text((b.x0 + 6, b.y0 + 2), str(numbers[tid]), fill=colour, font=font)
+            font = small = ImageFont.load_default()
+        for t in self.tracks.values():
+            b, r = t["box"], t["result"]
+            if r is None:   # not recognised yet: a plain grey box
+                d.rectangle((b.x0, b.y0, b.x1, b.y1), outline=(200, 200, 200), width=2)
+                continue
+            # like Brickognize: the box in the colour it thinks the piece is, with the part and colour on a tag
+            rgb = r["rgb"]
+            d.rectangle((b.x0 - 1, b.y0 - 1, b.x1 + 1, b.y1 + 1), outline=(255, 255, 255), width=1)
+            d.rectangle((b.x0, b.y0, b.x1, b.y1), outline=rgb, width=4)
+            label = f"{'several pieces' if r['part'] == 'multiple' else r['part']}  {r['colour']}"
+            x0, y0, x1, y1 = d.textbbox((0, 0), label, font=small)
+            w, h = x1 - x0 + 12, y1 - y0 + 8
+            top = b.y0 - h if b.y0 - h >= 0 else b.y1          # above the box, or below it at the top edge
+            d.rectangle((b.x0, top, b.x0 + w, top + h), fill=rgb)
+            dark = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2] > 150   # dark text on light colours
+            d.text((b.x0 + 6, top + 4 - y0), label, fill=(20, 20, 20) if dark else (255, 255, 255), font=small)
         if self.detector is None:
             d.text((12, 10), "Learning the empty surface …" if self.learning is not None else
                    "Press 1. Learn the empty surface", fill=(255, 255, 255), font=font)
