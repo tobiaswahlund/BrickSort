@@ -42,3 +42,4 @@ venv/
 build/
 /BrickSort.lnk
 /real_machine.json
+/model_choice.json

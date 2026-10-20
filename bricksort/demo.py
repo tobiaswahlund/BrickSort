@@ -84,12 +84,18 @@ class Demo(tk.Tk):
         bar = ttk.Frame(self)
         bar.grid(row=0, column=0, columnspan=3, sticky="we", pady=(0, 8))
         ttk.Button(bar, text="Open photo…", command=self.open_photo).pack(side="left")
-        ttk.Button(bar, text="Sort unknown photos…", command=self.review_unknown).pack(side="left", padx=6)
-        ttk.Button(bar, text="Review rest bin…", command=self.review_rest).pack(side="left")
-        ttk.Button(bar, text="Spot check…", command=self.spot_check).pack(side="left", padx=6)
+        # correcting and retraining: hidden while Brickognize is the model (it can't be retrained)
+        self.training_tools = [
+            ttk.Button(bar, text="Sort unknown photos…", command=self.review_unknown),
+            ttk.Button(bar, text="Review rest bin…", command=self.review_rest),
+            ttk.Button(bar, text="Spot check…", command=self.spot_check)]
+        for b in self.training_tools:
+            b.pack(side="left", padx=(6, 0))
         self.retrain_btn = ttk.Button(bar, text="Retrain model", command=self.retrain)
         self.retrain_btn.pack(side="right")
-        ttk.Button(bar, text="New custom piece…", command=self.new_custom_piece).pack(side="right", padx=6)
+        custom_btn = ttk.Button(bar, text="New custom piece…", command=self.new_custom_piece)
+        custom_btn.pack(side="right", padx=6)
+        self.training_tools += [self.retrain_btn, custom_btn]
 
         # ---- left: choose a piece and drop it
         left = ttk.LabelFrame(self, text="Piece")
@@ -197,12 +203,18 @@ class Demo(tk.Tk):
         self.log.configure(state="disabled")
 
     def load_model(self):
-        if not config.MODEL_FILE.exists():
-            self.recognizer = None
+        from .model import is_remote, load_recognizer
+        self.recognizer = load_recognizer()   # your model, or Brickognize (chosen in the BrickSort menu)
+        self.remote = is_remote(self.recognizer)
+        if self.recognizer is None:
             self.write("No trained model yet – drops work, but there are no guesses until you train.")
             return
-        from .model import Recognizer
-        self.recognizer = Recognizer()
+        if self.remote:
+            for b in self.training_tools:
+                b.pack_forget()
+            self.write("Using Brickognize (online): every piece is sent to brickognize.com. It can't be "
+                       "corrected or retrained, so those buttons are hidden. Switch back in the BrickSort menu.")
+            return
         i = self.recognizer.info
         self.write(f"Model loaded: knows {len(self.recognizer.classes)} parts, trained {i.get('trained', '?')}, "
                    f"on test pictures part right {i.get('top1', 0):.0%} (top 5: {i.get('top5', 0):.0%}), "
@@ -398,7 +410,8 @@ class Demo(tk.Tk):
                                == catalog.same_colour(self.color_name(cid)))
             self.status.configure(text=f"This session: {t['drops']} drops. Part right on first guess {t['first']}, "
                                        f"within top 5 {t['top5']}. Colour right {t['color']}.")
-        return ReviewWindow(self, crop, guesses, color_guesses, truth, source, on_saved, extra, simulated)
+        return ReviewWindow(self, crop, guesses, color_guesses, truth, source, on_saved, extra, simulated,
+                            can_correct=not getattr(self, "remote", False))
 
     def color_name(self, cid):
         return self.colors[cid][0] if cid in self.colors else "Unknown"
@@ -531,7 +544,9 @@ def _outlined(master, right, padding, groove=True):
 
 
 class ReviewWindow(tk.Toplevel):
-    def __init__(self, app, crop, guesses, color_guesses, truth, source=None, on_saved=None, extra=(), simulated=False):
+    def __init__(self, app, crop, guesses, color_guesses, truth, source=None, on_saved=None, extra=(), simulated=False,
+                 can_correct=True):
+        """can_correct: False while Brickognize is the model: only its guesses are shown, nothing is saved."""
         super().__init__(app)
         self.simulated = simulated
         self.app, self.crop, self.source, self.on_saved = app, crop, source, on_saved
@@ -597,16 +612,23 @@ class ReviewWindow(tk.Toplevel):
                 Label(card, text=f"Look-alike: {other} ({kind})", foreground="#a05a00").pack()
             if part_id in app.bins and app.bins[part_id] != part_id:
                 Label(card, text=f"Sorts into bin {app.bins[part_id]}", foreground="#666").pack()
-            ttk.Button(card, text="Select", command=lambda i=part_id: self.choose(i)).pack(pady=(4, 0))
+            if can_correct:
+                ttk.Button(card, text="Select", command=lambda i=part_id: self.choose(i)).pack(pady=(4, 0))
 
         bottom = ttk.Frame(self)
         bottom.pack(fill="x", pady=(12, 0))
+        self.skipped = False
+        if not can_correct:   # Brickognize: look, nothing to correct
+            ttk.Label(bottom, text="Brickognize's guesses (online). It can't learn from corrections.",
+                      foreground="#666").pack(side="left")
+            ttk.Button(bottom, text="Close", command=self.destroy).pack(side="right")
+            self.images = imgs
+            return
         ttk.Label(bottom, text="None of these? Part number:").pack(side="left")
         self.entry = ttk.Combobox(bottom, width=14, values=[p["id"] for p in app.parts])
         self.entry.pack(side="left", padx=6)
         self.entry.bind("<Return>", lambda e: self.choose(self.entry.get()))
         ttk.Button(bottom, text="Save", command=lambda: self.choose(self.entry.get())).pack(side="left")
-        self.skipped = False
         ttk.Button(bottom, text="Skip", command=self.skip).pack(side="right")
         for label, command in extra:
             ttk.Button(bottom, text=label, command=command).pack(side="right", padx=4)

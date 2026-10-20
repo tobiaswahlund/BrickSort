@@ -99,6 +99,17 @@ class App(tk.Tk):
         ttk.Label(words, text="BrickSort", font=("Segoe UI", 20, "bold")).pack(anchor="w")
         ttk.Label(words, text="Recognise LEGO pieces from a camera picture and sort them.",
                   foreground=MUTED).pack(anchor="w")
+        # which model recognises the pieces, in every part opened from here
+        from .model import BRICKOGNIZE, MINE, choose, chosen
+        pick = ttk.LabelFrame(head, text="Model", padding=(8, 2))
+        pick.pack(side="right", anchor="n")
+        self.model_var = tk.StringVar(value=chosen())
+        ttk.Radiobutton(pick, text="Your own model", value=MINE, variable=self.model_var,
+                        command=lambda: choose(MINE)).pack(anchor="w")
+        ttk.Radiobutton(pick, text="Brickognize (online)", value=BRICKOGNIZE, variable=self.model_var,
+                        command=lambda: choose(BRICKOGNIZE)).pack(anchor="w")
+        ttk.Label(pick, text="Brickognize can't be corrected\nor retrained: those buttons hide.",
+                  foreground=MUTED, font=("Segoe UI", 8)).pack(anchor="w")
         row = 1
         for section, tools in TOOLS:
             box = ttk.LabelFrame(m, text=section, padding=(10, 6))

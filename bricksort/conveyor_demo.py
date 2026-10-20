@@ -57,10 +57,9 @@ class ConveyorDemo(tk.Tk):
         self.props = properties.load_all(self.lib)
         self.all_parts = catalog.all_lego_parts(self.lib)   # for "All pieces" on the belt
         self.rng = np.random.default_rng()
-        self.recognizer = None
-        if config.MODEL_FILE.exists():
-            from .model import Recognizer
-            self.recognizer = Recognizer()
+        from .model import is_remote, load_recognizer
+        self.recognizer = load_recognizer()   # your model, or Brickognize (chosen in the BrickSort menu)
+        self.remote = is_remote(self.recognizer)
         self.running = False
         self.tick_no = 0
         self._build_ui()
@@ -94,6 +93,7 @@ class ConveyorDemo(tk.Tk):
         self.diverter = SimDiverter(self.world, self.rules["rest_bin"])
         self.machine = Machine(self.camera, SimBelt(self.world), self.diverter, self.recognizer,
                                self.color_names, self.props, self.clock, self.rules)
+        self.machine.keep_pictures = not self.remote   # pictures for review: only worth it for your own model
         self.machine.calibrate(self.world.empty_belt_frames())
         self.counts = {b: 0 for b in self.bins}
         self.score = {"sorted": 0, "right": 0, "rest": 0, "wrong": 0}
@@ -114,8 +114,10 @@ class ConveyorDemo(tk.Tk):
         self.go = ttk.Button(bar, text="▶ Start", width=10, command=self.toggle)
         self.go.pack(side="left")
         ttk.Button(bar, text="↺ Reset", command=self.reset).pack(side="left", padx=(6, 0))
-        ttk.Button(bar, text="Spot check…", command=lambda: self._review("--spot")).pack(side="right")
-        ttk.Button(bar, text="Review rest bin…", command=lambda: self._review("--rest")).pack(side="right", padx=6)
+        if not self.remote:   # with Brickognize there's nothing to correct (it can't be retrained)
+            ttk.Button(bar, text="Spot check…", command=lambda: self._review("--spot")).pack(side="right")
+            ttk.Button(bar, text="Review rest bin…", command=lambda: self._review("--rest")).pack(side="right",
+                                                                                               padx=6)
         ttk.Button(bar, text="Edit bins…", command=self.edit_bins).pack(side="right")
 
         # ---- left: the machine, the camera and the last piece

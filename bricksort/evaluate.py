@@ -63,10 +63,17 @@ def _categories():
 
 
 def evaluate(model_file=None, log=print):
-    from .model import Recognizer
+    """model_file: a model file to test; none: the model chosen in the BrickSort menu (yours or Brickognize).
+    Brickognize is scored on the same pieces as your model knows, so the two can be compared directly;
+    its results go to RESULTS_brickognize.md and leave yours alone."""
+    from .model import Recognizer, is_remote, load_recognizer
     from .train import load_square
+    rec = load_recognizer() if model_file is None else None
+    remote = is_remote(rec)
     model_file = Path(model_file or config.MODEL_FILE)
-    rec = Recognizer(model_file)
+    if not remote:
+        rec = Recognizer(model_file)
+    own_classes = Recognizer(model_file).classes if remote else rec.classes
     colours = {cid: name for cid, (name, _) in catalog.colors(include_trans=True).items()}
     category_of = _categories()
     photos = test_photos()
@@ -75,7 +82,7 @@ def evaluate(model_file=None, log=print):
         return None
 
     def knows(part):
-        return any(catalog.same_piece(part, c) for c in rec.classes)
+        return any(catalog.same_piece(part, c) for c in own_classes)
 
     per_piece = defaultdict(list)   # piece -> [(known, top1, top5, colour right or None, category right, guess)]
     for k, (path, part, colour) in enumerate(photos, 1):
@@ -107,8 +114,8 @@ def evaluate(model_file=None, log=print):
     unknown_pieces = [rs for rs in pieces if not rs[0][0]]
     confused = Counter(r[5] for rs in known_pieces for r in rs if not r[1])
     result = {
-        "model": model_file.name,
-        "model_sha256": hashlib.sha256(model_file.read_bytes()).hexdigest(),
+        "model": "Brickognize (online)" if remote else model_file.name,
+        "model_sha256": "" if remote else hashlib.sha256(model_file.read_bytes()).hexdigest(),
         "tested": time.strftime("%Y-%m-%d %H:%M"),
         "photos": len(photos),
         "pieces": len(pieces),
@@ -121,8 +128,9 @@ def evaluate(model_file=None, log=print):
         "most_confused": [{"real": a, "guessed": b, "photos": n} for (a, b), n in confused.most_common(10)],
     }
     RESULTS.mkdir(exist_ok=True)
-    (RESULTS / "results.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
-    (RESULTS / "RESULTS.md").write_text(markdown(result), encoding="utf-8")
+    name = "_brickognize" if remote else ""
+    (RESULTS / f"results{name}.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
+    (RESULTS / f"RESULTS{name}.md").write_text(markdown(result), encoding="utf-8")
     log(markdown(result))
     return result
 
@@ -146,7 +154,7 @@ def markdown(r):
     if r["most_confused"]:
         lines += ["", "Most confused (real → guessed): " + ", ".join(
             f"{c['real']} → {c['guessed']} ({c['photos']})" for c in r["most_confused"])]
-    lines += ["", f"Model: `{r['model']}` (sha256 {r['model_sha256'][:12]}…)."]
+    lines += ["", f"Model: `{r['model']}`" + (f" (sha256 {r['model_sha256'][:12]}…)." if r["model_sha256"] else ".")]
     return "\n".join(lines) + "\n"
 
 

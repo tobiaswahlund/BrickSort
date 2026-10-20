@@ -90,3 +90,35 @@ class Recognizer:
             lists.append([(names[j], float(q)) for q, j in zip(v, i)])
         printed = float(torch.sigmoid(outs[3])[0, 0]) if self.knows_printed else None
         return Prediction(*lists, printed=printed)
+
+
+# ---------------------------------------------------------------- which model the windows use
+CHOICE_FILE = config.PROJECT_DIR / "model_choice.json"   # chosen in the BrickSort menu
+MINE, BRICKOGNIZE = "mine", "brickognize"
+
+
+def chosen():
+    """MINE (your trained model) or BRICKOGNIZE (the online service)."""
+    import json
+    try:
+        return json.loads(CHOICE_FILE.read_text(encoding="utf-8")).get("model", MINE)
+    except (OSError, ValueError):
+        return MINE
+
+
+def choose(name):
+    import json
+    CHOICE_FILE.write_text(json.dumps({"model": name}), encoding="utf-8")
+
+
+def load_recognizer():
+    """The model the windows use: your own (None if there isn't one yet) or Brickognize. Brickognize
+    has remote=True: it can't be retrained, so the windows hide correcting and retraining."""
+    if chosen() == BRICKOGNIZE:
+        from .brickognize import BrickognizeRecognizer
+        return BrickognizeRecognizer()
+    return Recognizer() if config.MODEL_FILE.exists() else None
+
+
+def is_remote(recognizer):
+    return bool(getattr(recognizer, "remote", False))

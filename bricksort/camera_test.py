@@ -159,7 +159,10 @@ class CameraTest(tk.Tk):
         ttk.Checkbutton(shoot, text="By itself when a piece lies still", variable=self.auto).pack(side="left",
                                                                                                  padx=10)
         ttk.Button(shoot, text="Clear the list", command=self.forget).pack(side="left")
-        ttk.Button(shoot, text="Review rest bin…", command=self.review_rest).pack(side="right")
+        self.review_btn = ttk.Button(shoot, text="Review rest bin…", command=self.review_rest)
+        self.review_btn.pack(side="right")
+        self.model_text = ttk.Label(shoot, text="", foreground=MUTED)
+        self.model_text.pack(side="right", padx=10)
         self.bind("<space>", lambda e: self.take_picture())
 
         view = ttk.LabelFrame(self, text="Camera (red box = piece found)")
@@ -185,9 +188,10 @@ class CameraTest(tk.Tk):
 
     # ------------------------------------------------------------------ camera
     def _load_model(self):
-        if config.MODEL_FILE.exists():
-            from .model import Recognizer
-            self.recognizer = Recognizer()
+        from .model import is_remote, load_recognizer
+        self.recognizer = load_recognizer()   # your model, or Brickognize (chosen in the BrickSort menu)
+        self.remote = is_remote(self.recognizer)
+        self.done.put(("model", None))   # tell the window (from its own thread) which model it is
 
     def _open_camera(self):
         found = find_cameras()
@@ -326,7 +330,11 @@ class CameraTest(tk.Tk):
                     self.status.configure(text="Learned. Now put pieces under the camera, a few cm apart, and press Take picture "
                                                "(Space). Measure once with a known piece (button 2) so sizes are known.")
             while not self.done.empty():
-                self._got(*self.done.get())
+                tid, result = self.done.get()
+                if tid == "model":
+                    self._show_model()
+                else:
+                    self._got(tid, result)
             blobs = self.detector.find(frame) if self.detector else []
             self._follow(blobs, frame)
             self._draw(frame)
@@ -379,6 +387,13 @@ class CameraTest(tk.Tk):
         self.status.configure(text=f"Picture taken: {len(self.tracks)} pieces. The ones that would go to the rest "
                                    "bin are kept for Review rest bin.")
 
+    def _show_model(self):
+        if self.remote:
+            self.review_btn.pack_forget()
+            self.model_text.configure(text="Model: Brickognize (online)")
+        else:
+            self.model_text.configure(text="Model: yours" if self.recognizer else "No model yet")
+
     def review_rest(self):
         """The Demo's review window on the rest-bin pictures: say what each piece really was. Those answers
         are saved as real photos and used the next time the model is trained."""
@@ -410,7 +425,7 @@ class CameraTest(tk.Tk):
         result = {"part": part, "p": p_conf, "colour": colour, "c": c_conf, "bin": bin_name, "reason": reason,
                   "picture": picture, "size": size, "next": pred.parts[1:3],
                   "next_colours": [(self.color_names.get(c, "?"), q) for c, q in pred.colors[1:3]]}
-        if keep:
+        if keep and not getattr(self, "remote", False):   # Brickognize can't learn from it: nothing to keep
             self._keep(picture, pred, bin_name, reason)
         self.done.put((tid, result))   # picked up by _tick (Tk is only touched from its own thread)
 

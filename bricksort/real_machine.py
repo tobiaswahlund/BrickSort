@@ -20,7 +20,7 @@ from tkinter import messagebox, ttk
 
 from PIL import Image, ImageDraw, ImageFont
 
-from . import catalog, config
+from . import catalog
 from .camera_test import Camera as LiveFeed
 from .camera_test import correct_colours, find_cameras, load_settings, save_settings
 from .ldraw import Library
@@ -95,10 +95,9 @@ class RealMachine(tk.Tk):
         self.color_names = {cid: n for cid, (n, _) in self.colors.items()}
         self.lib = Library()
         self.props = properties.load_all(self.lib)
-        self.recognizer = None
-        if config.MODEL_FILE.exists():
-            from .model import Recognizer
-            self.recognizer = Recognizer()
+        from .model import is_remote, load_recognizer
+        self.recognizer = load_recognizer()   # your model, or Brickognize (chosen in the BrickSort menu)
+        self.remote = is_remote(self.recognizer)
         self._build()
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.after(100, self._open_camera)
@@ -267,6 +266,7 @@ class RealMachine(tk.Tk):
         self.machine = Machine(camera, belt, belt, model, self.color_names, self.props,
                                hardware.Clock(), self.rules)
         self.machine.real = True   # corrections of these pictures are real photos, not simulated ones
+        self.machine.keep_pictures = not self.remote   # Brickognize can't be retrained: nothing to review
         self.machine.calibrate(frames)
         self._apply_area()
         self.counts = {}
