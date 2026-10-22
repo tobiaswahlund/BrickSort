@@ -43,3 +43,5 @@ build/
 /BrickSort.lnk
 /real_machine.json
 /model_choice.json
+/web/model/
+/_site/

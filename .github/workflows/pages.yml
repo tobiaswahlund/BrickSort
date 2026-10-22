@@ -1,0 +1,51 @@
+name: Website
+
+# Builds the BrickSort website (web/) and publishes it with GitHub Pages. The model is not in git:
+# the newest release's lego_model.pt is downloaded here and turned into model.onnx for the browser,
+# so a new release updates the website too.
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", "bricksort/export_web.py", "bricksort/model.py", ".github/workflows/pages.yml"]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install torch==2.14.1 torchvision==0.29.1 --index-url https://download.pytorch.org/whl/cpu
+      - run: pip install numpy pillow onnx==1.23.2
+      - run: python -m bricksort.get_model
+      - run: python -m bricksort.export_web _site/model
+      - run: |
+          cp web/* _site/
+          cp bricksort/assets/logo.png _site/logo.png
+          cp bricksort/assets/multiple.png _site/example.png
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
