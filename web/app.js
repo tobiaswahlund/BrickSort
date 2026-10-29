@@ -212,7 +212,35 @@ $("file").addEventListener("change", async (e) => {
   URL.revokeObjectURL(url);
   e.target.value = "";
 });
-$("example").addEventListener("click", async () => { stopCamera(); usePicture(await loadImage("example.png")); });
+// "Try an example": a new picture each time, of 3 to 6 random pieces from the sorting machine
+// (pictures made in the 3D sorter, see sorter.html), laid apart on its belt
+let sim = null;
+async function examplePicture() {
+  sim ??= await (await fetch("sim/sim.json")).json();
+  const c = document.createElement("canvas"), g = c.getContext("2d");
+  c.width = c.height = sim.camera;
+  g.drawImage(await loadImage("sim/empty.jpg"), 0, 0);
+  const placed = [], want = 3 + Math.floor(Math.random() * 4), gap = 30;
+  for (let tries = 0; placed.length < want && tries < 300; tries++) {
+    const p = sim.pieces[Math.floor(Math.random() * sim.pieces.length)];
+    const x = 20 + Math.random() * (sim.camera - 40 - p.w), y = sim.belt_top + 20 + Math.random() * (sim.belt_bottom - sim.belt_top - 40 - p.h);
+    if (x < 0 || y < sim.belt_top) continue;
+    if (placed.some((q) => x < q.x + q.p.w + gap && q.x < x + p.w + gap && y < q.y + q.p.h + gap && q.y < y + p.h + gap)) continue;
+    placed.push({ p, x, y });
+  }
+  const imgs = await Promise.all(placed.map((q) => loadImage("sim/" + q.p.file)));
+  placed.forEach((q, i) => g.drawImage(imgs[i], Math.round(q.x), Math.round(q.y)));
+  return c;
+}
+$("example").addEventListener("click", async () => {
+  stopCamera();
+  try {
+    usePicture(await examplePicture());
+  } catch (e) {   // the sorting machine's pictures are missing: the fixed example instead
+    console.error(e);
+    usePicture(await loadImage("example.png"));
+  }
+});
 document.querySelectorAll("input[name=model]").forEach((r) => r.addEventListener("change", recognise));
 
 let stream = null;
