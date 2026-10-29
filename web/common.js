@@ -10,7 +10,7 @@ const modelChoice = () => document.querySelector("input[name=model]:checked").va
 // ------------------------------------------------------------------ the model
 async function loadModel(statusLine) {
   try {
-    labels = await (await fetch("model/labels.json")).json();
+    labels = await (await fetch("model/labels.json", { cache: "no-cache" })).json();
     ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/";
     session = await ort.InferenceSession.create("model/model.onnx", { executionProviders: ["wasm"] });
     const when = labels.trained ? `, trained ${labels.trained}` : "";

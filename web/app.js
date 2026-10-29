@@ -216,7 +216,7 @@ $("file").addEventListener("change", async (e) => {
 // (pictures made in the 3D sorter, see sorter.html), laid apart on its belt
 let sim = null;
 async function examplePicture() {
-  sim ??= await (await fetch("sim/sim.json")).json();
+  sim ??= await (await fetch("sim/sim.json", { cache: "no-cache" })).json();
   const c = document.createElement("canvas"), g = c.getContext("2d");
   c.width = c.height = sim.camera;
   g.drawImage(await loadImage("sim/empty.jpg"), 0, 0);

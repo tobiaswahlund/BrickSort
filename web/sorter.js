@@ -114,7 +114,7 @@ async function setup() {
     const byId = new Map(labels.colours.map((c) => [c.id, c.name]));
     labels.colours.forEach((c) => countsAs.set(c.name.toLowerCase(), byId.get(c.counts_as) || c.name));
   }
-  sim = await (await fetch("sim/sim.json")).json();
+  sim = await (await fetch("sim/sim.json", { cache: "no-cache" })).json();
   ppu = sim.px_per_mm * 100;
   [belt, light, empty] = await Promise.all(["sim/belt.png", "sim/light.png", "sim/empty.jpg"].map(loadImage));
   sprites = await Promise.all(sim.pieces.map((p) => loadImage("sim/" + p.file)));

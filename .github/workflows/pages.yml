@@ -36,6 +36,8 @@ jobs:
           cp -r web/* _site/
           cp bricksort/assets/logo.png _site/logo.png
           cp bricksort/assets/multiple.png _site/example.png
+          # a new address for the scripts each time, so browsers don't keep using an old copy
+          sed -i "s/__V__/${GITHUB_SHA::7}/g" _site/*.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
