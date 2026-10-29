@@ -72,7 +72,7 @@ def main(n=240):
     props = properties.load_all(lib)
     small = [p for p in parts if props.get(p["id"], {}).get("length", 99) * 0.08 <= MAX_LONG]
     world = ConveyorWorld(lib, small, colors, ["a", "b"], rng, belt=BELT)
-    world.junk_chance = 0.05
+    world.junk_chance = 0.0   # LEGO pieces only (the website shows no other objects)
     ppu = CAM_RES / (2 * CAM_H * np.tan(np.radians(FOVY / 2)))    # camera pixels per world unit
 
     if OUT.exists():
