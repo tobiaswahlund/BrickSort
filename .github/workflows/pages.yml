@@ -6,7 +6,7 @@ name: Website
 on:
   push:
     branches: [main]
-    paths: ["web/**", "bricksort/export_web.py", "bricksort/model.py", ".github/workflows/pages.yml"]
+    paths: ["web/**", "bricksort/export_web.py", "bricksort/sorter/rules.py", "defaults/**", "bricksort/model.py", ".github/workflows/pages.yml"]
   release:
     types: [published]
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
       - run: python -m bricksort.get_model
       - run: python -m bricksort.export_web _site/model
       - run: |
-          cp web/* _site/
+          cp -r web/* _site/
           cp bricksort/assets/logo.png _site/logo.png
           cp bricksort/assets/multiple.png _site/example.png
       - uses: actions/upload-pages-artifact@v3

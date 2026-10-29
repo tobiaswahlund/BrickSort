@@ -28,10 +28,15 @@
     <div class="buttons">
       <label class="button">📷 Choose or take a photo<input id="file" type="file" accept="image/*" hidden></label>
       <button id="camera" type="button">Use the webcam</button>
-      <button id="snap" type="button" hidden>Take picture</button>
+      <button id="snap" type="button" class="primary" hidden>Take picture</button>
       <button id="example" type="button">Try an example</button>
     </div>
     <p id="status" class="muted">Loading the model …</p>
+  </section>
+
+  <section class="card tryit">
+    <span><b>The sorting machine:</b> watch pieces ride a belt, get recognised and sorted into bins.</span>
+    <a class="button primary" href="sorter.html">▶ Open the sorting machine</a>
   </section>
 
   <section class="result">
@@ -48,11 +53,12 @@
   BrickSort by Tobias Wahlund · code MIT, model CC BY-SA 4.0 ·
   part data from <a href="https://rebrickable.com">Rebrickable</a> ·
   online recognition by <a href="https://brickognize.com">Brickognize</a> ·
-  the sorting machine and training run on a PC: see <a href="https://github.com/tobiaswahlund/BrickSort">GitHub</a>.
+  the real sorting machine and training run on a PC: see <a href="https://github.com/tobiaswahlund/BrickSort">GitHub</a>.
   LEGO® is a trademark of the LEGO Group, which does not sponsor or endorse this site.
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
+<script src="common.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

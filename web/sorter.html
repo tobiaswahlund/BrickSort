@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BrickSort sorting machine</title>
+<meta name="description" content="A virtual LEGO sorting machine: pieces ride a belt under a camera, get recognised and sorted into bins.">
+<meta name="theme-color" content="#d62828">
+<link rel="icon" href="logo.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <img src="logo.png" alt="" width="56" height="56">
+  <div>
+    <h1>Sorting machine</h1>
+    <p class="muted">Pieces ride a belt under a camera; as each one passes the middle line it's photographed,
+      recognised and sorted into a bin. <a href="./">◀ Recognise your own photos</a></p>
+  </div>
+</header>
+
+<main>
+  <section class="controls">
+    <fieldset>
+      <legend>Model</legend>
+      <label><input type="radio" name="model" value="mine" checked> BrickSort's own model <span class="muted">(runs in your browser)</span></label>
+      <label><input type="radio" name="model" value="brickognize"> Brickognize <span class="muted">(online: each piece is sent to brickognize.com)</span></label>
+    </fieldset>
+    <div class="buttons">
+      <button id="go" type="button" class="primary">Start</button>
+      <label class="inline">Speed
+        <select id="speed"><option value="0.5">½×</option><option value="1" selected>1×</option>
+          <option value="2">2×</option><option value="4">4×</option></select></label>
+      <label class="inline">Sure enough at <input id="sure" type="range" min="50" max="99" value="85"> <span id="sure_text">85%</span></label>
+    </div>
+    <p id="status" class="muted">Loading the model …</p>
+  </section>
+
+  <section class="machine">
+    <div class="card">
+      <h2>Camera</h2>
+      <canvas id="camera" width="720" height="720"></canvas>
+    </div>
+    <div class="side">
+      <div class="card">
+        <h2>Last piece</h2>
+        <div id="last" class="last muted">Nothing photographed yet.</div>
+      </div>
+      <div class="card">
+        <h2>Score</h2>
+        <div id="score" class="muted">No pieces sorted yet.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card wide">
+    <h2>The machine</h2>
+    <canvas id="overview" width="1100" height="300"></canvas>
+    <p class="muted">The belt runs left to right. Below the camera (dashed) each piece gets its answer; at the end a
+      flap sends it to its bin. A piece the model isn't sure enough about goes to <b>Rest</b>, to be looked at by hand.</p>
+  </section>
+
+  <section class="card wide">
+    <h2>Log</h2>
+    <ol id="log" class="log"></ol>
+  </section>
+</main>
+
+<footer class="muted">
+  The pieces are pictures from BrickSort's 3D sorting machine (MuJoCo physics, LDraw parts), made on a PC: a browser
+  can't run that, so here they slide along the belt as they landed. The recognising is real: the camera picture is
+  cropped and the model guesses, as on the machine.
+  BrickSort by Tobias Wahlund · code MIT, model CC BY-SA 4.0 · parts from <a href="https://www.ldraw.org">LDraw</a>
+  (CC BY 2.0) · part data from <a href="https://rebrickable.com">Rebrickable</a> ·
+  LEGO® is a trademark of the LEGO Group, which does not sponsor or endorse this site.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
+<script src="common.js"></script>
+<script src="sorter.js"></script>
+</body>
+</html>

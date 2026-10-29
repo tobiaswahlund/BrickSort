@@ -19,8 +19,7 @@ fieldset label { display: block; margin: 3px 0; }
 .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
 button, .button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line);
   background: var(--accent); color: #fff; cursor: pointer; }
-button[type=button]:not(#snap) { background: var(--card); color: var(--text); }
-#snap { background: var(--accent); color: #fff; }
+button[type=button]:not(.primary) { background: var(--card); color: var(--text); }
 .result { display: grid; grid-template-columns: minmax(0, 3fr) minmax(260px, 2fr); gap: 16px; margin-top: 16px; }
 @media (max-width: 760px) { .result { grid-template-columns: 1fr; } }
 .picture { align-self: start; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; min-height: 120px; }
@@ -32,3 +31,20 @@ canvas, video { width: 100%; height: auto; display: block; border-radius: 8px; }
 .guess { font-weight: 600; }
 .alt { font-size: .88rem; color: var(--muted); }
 footer { max-width: 1100px; margin: auto; padding: 0 16px 24px; }
+h2 { margin: 0 0 8px; font-size: 1.05rem; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.wide { margin-top: 16px; }
+.machine { display: grid; grid-template-columns: minmax(0, 3fr) minmax(260px, 2fr); gap: 16px; margin-top: 16px; }
+@media (max-width: 760px) { .machine { grid-template-columns: 1fr; } }
+.side { display: flex; flex-direction: column; gap: 16px; }
+.inline { display: inline-flex; align-items: center; gap: 6px; }
+select { font: inherit; padding: 4px; border-radius: 6px; }
+button.primary { background: var(--accent); color: #fff; }
+.last img { width: 120px; height: 120px; border-radius: 8px; float: left; margin: 0 10px 6px 0; }
+.last { overflow: hidden; color: var(--text); }
+.bin { font-weight: 600; font-size: 1.1rem; }
+.right { color: #1a8f3a; } .wrong { color: #d62828; }
+.log { margin: 0; padding-left: 0; list-style: none; max-height: 260px; overflow-y: auto; font-size: .9rem; }
+.log li { padding: 3px 0; border-bottom: 1px solid var(--line); }
+.tryit { display: flex; gap: 12px; align-items: center; justify-content: space-between; margin-top: 16px; }
+a.button { text-decoration: none; white-space: nowrap; }
