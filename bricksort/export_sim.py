@@ -2,7 +2,11 @@
 sorting machine's camera sees them.
 
 Run:  python -m bricksort.export_sim            (needs the 3D parts; the pictures are kept in git)
-      python -m bricksort.export_sim 300        (how many pieces, default 240)
+      python -m bricksort.export_sim 400 800    (how many pieces the model knows, then how many from
+                                                 every LEGO part; default 400 and 800)
+
+The second lot is picked from every LEGO part with a 3D model, so most of those are pieces the model
+doesn't know by number: the website's "only pieces the model knows" box switches them on and off.
 
 A browser can't run the 3D physics, so each piece is dropped on the belt here, under the camera,
 and photographed once it has settled. The website then slides these pictures along a moving belt,
@@ -25,7 +29,7 @@ from PIL import Image, ImageFilter
 from . import catalog, config
 from .ldraw import Library
 from .sorter import properties
-from .sorter.conveyor import BELT_HALF_WIDTH, CAM_H, CAM_RES, FOVY, ConveyorWorld
+from .sorter.conveyor import BELT_HALF_WIDTH, CAM_H, CAM_RES, FOVY, SPAWN_ALL, ConveyorWorld
 
 OUT = config.PROJECT_DIR / "web" / "sim"
 BELT = "Green, matte"
@@ -64,14 +68,14 @@ def _cutout(frame, empty):
     return rgba.clip(0, 255).astype(np.uint8), solid
 
 
-def main(n=240):
+def main(n_known=400, n_any=800):
     rng = np.random.default_rng(7)
     lib = Library()
     colors = catalog.colors(include_trans=True)
     parts = catalog.load_parts()
     props = properties.load_all(lib)
     small = [p for p in parts if props.get(p["id"], {}).get("length", 99) * 0.08 <= MAX_LONG]
-    world = ConveyorWorld(lib, small, colors, ["a", "b"], rng, belt=BELT)
+    world = ConveyorWorld(lib, small, colors, ["a", "b"], rng, belt=BELT, all_parts=catalog.all_lego_parts(lib))
     world.junk_chance = 0.0   # LEGO pieces only (the website shows no other objects)
     ppu = CAM_RES / (2 * CAM_H * np.tan(np.radians(FOVY / 2)))    # camera pixels per world unit
 
@@ -92,8 +96,12 @@ def main(n=240):
     grain = band[:, x0:x0 + period] / light[:, x0:x0 + period] * peak
     Image.fromarray(grain.clip(0, 255).astype(np.uint8)).save(OUT / "belt.png")
 
-    pieces, made = [], 0
+    rgb_of = {name: list(rgb) for name, rgb in colors.values()}
+    pieces, made, n = [], 0, n_known + n_any
     while made < n:
+        if made == n_known and world.spawn_mode != SPAWN_ALL:   # now from every LEGO part
+            world.spawn_mode = SPAWN_ALL
+            world.build()
         k = world._free_slot(rng.random() < world.junk_chance)
         if k is None:   # every piece of this set used: a new random set
             world.build()
@@ -126,7 +134,8 @@ def main(n=240):
                        # the piece itself (no shadow) inside the picture: what the camera finds
                        "solid": [int(sx.min()) - box[0], int(sy.min()) - box[1],
                                  int(sx.max()) + 1 - box[0], int(sy.max()) + 1 - box[1]],
-                       "part": part, "colour": colour, "category": category, "known": bool(known)})
+                       "part": part, "colour": colour, "rgb": rgb_of.get(colour), "category": category,
+                       "known": bool(known)})
         made += 1
         print(f"\r{made}/{n} pieces", end="", flush=True)
     print()
@@ -138,4 +147,4 @@ def main(n=240):
 
 
 if __name__ == "__main__":
-    main(int(sys.argv[1]) if len(sys.argv) > 1 else 240)
+    main(*[int(a) for a in sys.argv[1:3]])
