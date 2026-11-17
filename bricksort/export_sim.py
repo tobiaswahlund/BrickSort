@@ -1,14 +1,9 @@
 """Pictures for the website's sorting machine (web/sim/): pieces and the belt, as the virtual
 sorting machine's camera sees them.
 
-Run:  python -m bricksort.export_sim                 (needs the 3D parts; the pictures are kept in git)
-      python -m bricksort.export_sim 400 800 1080    (how many pieces the model knows, then how many
-                                                      from every LEGO part, and the camera picture's
-                                                      size in pixels; default 400, 800 and 1080)
-
-The camera is the sorting machine's camera, made sharper: the website photographs pieces at this
-size, then shrinks the photo to what the 720-pixel machine camera would see before the model
-guesses, so the model sees what it was trained on while people see a sharp picture.
+Run:  python -m bricksort.export_sim            (needs the 3D parts; the pictures are kept in git)
+      python -m bricksort.export_sim 400 800    (how many pieces the model knows, then how many from
+                                                 every LEGO part; default 400 and 800)
 
 The second lot is picked from every LEGO part with a 3D model, so most of those are pieces the model
 doesn't know by number: the website's "only pieces the model knows" box switches them on and off.
@@ -33,10 +28,8 @@ from PIL import Image, ImageFilter
 
 from . import catalog, config
 from .ldraw import Library
-from .sorter import conveyor, properties
+from .sorter import properties
 from .sorter.conveyor import BELT_HALF_WIDTH, CAM_H, CAM_RES, FOVY, SPAWN_ALL, ConveyorWorld
-
-MACHINE_RES = CAM_RES   # the machine camera's size (what the model's pictures were made with)
 
 OUT = config.PROJECT_DIR / "web" / "sim"
 BELT = "Green, matte"
@@ -75,9 +68,7 @@ def _cutout(frame, empty):
     return rgba.clip(0, 255).astype(np.uint8), solid
 
 
-def main(n_known=400, n_any=800, res=1080):
-    global CAM_RES
-    CAM_RES = conveyor.CAM_RES = res   # the camera renders at this size (the scene's own setting)
+def main(n_known=400, n_any=800):
     rng = np.random.default_rng(7)
     lib = Library()
     colors = catalog.colors(include_trans=True)
@@ -96,7 +87,7 @@ def main(n_known=400, n_any=800, res=1080):
     # Lighting: the belt picture smoothed out (its grain averages away); what's left is the belt's grain
     top, bottom = int(CAM_RES / 2 - BELT_HALF_WIDTH * ppu) + 3, int(CAM_RES / 2 + BELT_HALF_WIDTH * ppu) - 3
     band = empty[top:bottom].astype(np.float32)
-    light = np.stack([np.asarray(Image.fromarray(band[..., c].astype(np.uint8)).filter(ImageFilter.GaussianBlur(25 * res / MACHINE_RES)),
+    light = np.stack([np.asarray(Image.fromarray(band[..., c].astype(np.uint8)).filter(ImageFilter.GaussianBlur(25)),
                                  np.float32) for c in range(3)], 2) + 1
     peak = light.max()
     Image.fromarray((light / peak * 255).clip(0, 255).astype(np.uint8)).save(OUT / "light.png")
@@ -134,7 +125,7 @@ def main(n_known=400, n_any=800, res=1080):
         rgba, solid = _cutout(frame, empty)
         ys, xs = np.nonzero(rgba[..., 3] > 8)
         sy, sx = np.nonzero(solid)
-        if len(sx) < 30 * (res / MACHINE_RES) ** 2 or xs.min() <= 0 or ys.min() <= 0 or xs.max() >= CAM_RES - 1 or ys.max() >= CAM_RES - 1:
+        if len(sx) < 30 or xs.min() <= 0 or ys.min() <= 0 or xs.max() >= CAM_RES - 1 or ys.max() >= CAM_RES - 1:
             continue
         box = [int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1]
         Image.fromarray(rgba[box[1]:box[3], box[0]:box[2]]).save(OUT / "pieces" / f"{made}.webp",
@@ -148,7 +139,7 @@ def main(n_known=400, n_any=800, res=1080):
         made += 1
         print(f"\r{made}/{n} pieces", end="", flush=True)
     print()
-    sim = {"camera": CAM_RES, "machine_camera": MACHINE_RES, "px_per_mm": ppu / 100, "belt_top": top, "belt_bottom": bottom,
+    sim = {"camera": CAM_RES, "px_per_mm": ppu / 100, "belt_top": top, "belt_bottom": bottom,
            "period": period, "belt": BELT, "pieces": pieces}
     (OUT / "sim.json").write_text(json.dumps(sim), encoding="utf-8")
     size = sum(f.stat().st_size for f in OUT.rglob("*") if f.is_file())
@@ -156,4 +147,4 @@ def main(n_known=400, n_any=800, res=1080):
 
 
 if __name__ == "__main__":
-    main(*[int(a) for a in sys.argv[1:4]])
+    main(*[int(a) for a in sys.argv[1:3]])

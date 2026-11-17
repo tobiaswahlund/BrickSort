@@ -79,3 +79,5 @@ a.button.back:hover, a.button.back:focus-visible { filter: brightness(1.1); }
 .guess_nav #latest[aria-pressed=true] { background: var(--accent); color: #fff; }
 .guess_nav button:disabled { opacity: .45; cursor: default; }
 #guess_pos { margin: 6px 0 2px; }
+.bins { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 8px 0 4px; font-size: .92rem; }
+.bin_count { white-space: nowrap; }

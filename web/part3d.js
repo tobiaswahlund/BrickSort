@@ -1,6 +1,6 @@
 // A 3D model of a guessed part, in the guessed colour, that you spin by dragging (three.js).
 // The models are LDraw parts, turned into small files by bricksort/export_parts3d.py when the
-// website is built: parts/index.json says which file each part number uses.
+// website is built: machine/parts/index.json says which file each part number uses.
 "use strict";
 
 class Part3D {
@@ -57,7 +57,7 @@ class Part3D {
 
   async file(partId) {
     if (!this.index) {
-      this.index = fetch("parts/index.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+      this.index = fetch("machine/parts/index.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
     }
     const index = await this.index;
     return index[partId] || index[partId.replace(/[a-z]+$/, "")] || null;
@@ -65,7 +65,7 @@ class Part3D {
 
   geometry(file) {
     if (!this.models.has(file)) {
-      this.models.set(file, fetch("parts/" + file).then((r) => {
+      this.models.set(file, fetch("machine/parts/" + file).then((r) => {
         if (!r.ok) throw new Error(`no ${file}`);
         return r.arrayBuffer();
       }).then(decode));
