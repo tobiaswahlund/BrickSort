@@ -40,7 +40,6 @@ h2 { margin: 0 0 8px; font-size: 1.05rem; }
 .inline { display: inline-flex; align-items: center; gap: 6px; }
 select { font: inherit; padding: 4px; border-radius: 6px; }
 button.primary { background: var(--accent); color: #fff; }
-.last img { width: 120px; height: 120px; border-radius: 8px; float: left; margin: 0 10px 6px 0; }
 .last { overflow: hidden; color: var(--text); }
 .bin { font-weight: 600; font-size: 1.1rem; }
 .right { color: #1a8f3a; } .wrong { color: #d62828; }
@@ -65,3 +64,18 @@ a.button.back:hover, a.button.back:focus-visible { filter: brightness(1.1); }
 .colour_list label { display: block; }
 .badge { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: 1px 6px; border-radius: 6px;
   background: var(--line); color: var(--muted); vertical-align: 2px; }
+.guess_view { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.guess_view figure { margin: 0; min-width: 0; }
+.guess_view .frame { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, #fff, #dde2e8); }
+.guess_view .frame img { width: 100%; height: 100%; object-fit: contain; display: block; image-rendering: auto; }
+#part3d { width: 100%; height: 100%; touch-action: none; cursor: grab; border-radius: 0; }
+#part3d:active { cursor: grabbing; }
+.guess_view .note { position: absolute; inset: auto 6px 6px; font-size: .8rem; color: #445; text-align: center; pointer-events: none; }
+.guess_view figcaption { font-size: .8rem; margin-top: 3px; }
+.guess_nav { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.guess_nav button { padding: 5px 10px; }
+.guess_nav #latest { flex: 1; white-space: nowrap; }
+.guess_nav #latest[aria-pressed=true] { background: var(--accent); color: #fff; }
+.guess_nav button:disabled { opacity: .45; cursor: default; }
+#guess_pos { margin: 6px 0 2px; }

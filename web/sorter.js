@@ -7,7 +7,7 @@
 "use strict";
 
 const cam = $("camera"), view = $("overview"), statusLine = $("status");
-const g = cam.getContext("2d", { willReadFrequently: true }), o = view.getContext("2d");
+const g = cam.getContext("2d"), o = view.getContext("2d");
 const BELT_HALF_LEN = 2.0, SPEED = 0.22, SPACING_MIN = 0.4, SPACING_EXTRA = 0.3;   // as sorter/conveyor.py
 const BIN_COLOURS = ["#d95a4c", "#4d8cd9", "#f2bf40", "#73bf66", "#b373cc", "#f28c33", "#66cccc", "#999", "#4d4d4d"];
 
@@ -15,6 +15,7 @@ const BATCH = 20;   // pieces per batch: their pictures are loaded together
 const BRICKOGNIZE_GAP = 1.1;   // seconds between requests to brickognize.com (it's someone else's free service)
 
 let sim = null, ppu = 0, belt = null, light = null, empty = null;
+let K = 1;   // the camera picture's size compared with the machine's 720-pixel camera (sharper pictures)
 let rules = null, running = false, beltPos = 0, last = null, pieces = [], nextGap = 0, falling = [];
 let run = 0;   // goes up on Reset, so answers for pieces from before the reset are dropped
 const counts = {}, score = {};
@@ -127,6 +128,8 @@ async function setup() {
   }
   sim = await (await fetch("sim/sim.json", { cache: "no-cache" })).json();
   ppu = sim.px_per_mm * 100;
+  K = sim.camera / (sim.machine_camera || sim.camera);
+  cam.width = cam.height = sim.camera;
   [belt, light, empty] = await Promise.all(["sim/belt.png", "sim/light.png", "sim/empty.jpg"].map(loadImage));
   setRules();
   setupFilters();
@@ -282,7 +285,7 @@ function drawCamera() {
 function photograph(pc) {
   // a square around the piece, as sorter/detector.py crop(): longest side + 15%
   const [x0, y0, x1, y1] = solidBox(pc), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-  const half = Math.max(x1 - x0, y1 - y0) / 2 * 1.15 + 6, c = document.createElement("canvas");
+  const half = Math.max(x1 - x0, y1 - y0) / 2 * 1.15 + 6 * K, c = document.createElement("canvas");
   c.width = c.height = Math.round(2 * half);
   c.getContext("2d").drawImage(cam, cx - half, cy - half, 2 * half, 2 * half, 0, 0, c.width, c.height);
   return c;
@@ -304,12 +307,23 @@ function askBrickognize(pc) {
   return turn;
 }
 
+function forModel(picture) {
+  // the photo as the machine's own camera would have taken it (the model learned on those)
+  if (K === 1) return picture;
+  const c = document.createElement("canvas");
+  c.width = c.height = Math.max(1, Math.round(picture.width / K));
+  const cg = c.getContext("2d");
+  cg.imageSmoothingQuality = "high";
+  cg.drawImage(picture, 0, 0, c.width, c.height);
+  return c;
+}
+
 async function decide(pc) {
   pc.picture = photograph(pc);
   const brickognize = modelChoice() === "brickognize";
   try {
     if (!brickognize && !session) throw new Error("no model");
-    pc.answer = brickognize ? await askBrickognize(pc) : await predictMine(pc.picture);
+    pc.answer = brickognize ? await askBrickognize(pc) : await predictMine(forModel(pc.picture));
   } catch (e) {
     console.error(e);
     pc.answer = { parts: [], colours: [], categories: [], printed: null };
@@ -337,15 +351,58 @@ function check(pc) {
   }
 }
 
+// ------------------------------------------------------------------ the guesses, one at a time
+// Every guess is kept (the newest 200); ◀ ▶ step through them, "Latest guess" shows the newest and
+// keeps following new ones.
+const MAX_GUESSES = 200;
+let guesses = [], shown = -1, following = true, viewer = null;
+
 function showLast(pc) {
+  guesses.push({ picture: pc.picture.toDataURL("image/png"), html: guessText(pc), part: pc.answer.parts[0]?.id,
+    colour: pc.answer.colours[0] });
+  if (guesses.length > MAX_GUESSES) { guesses.shift(); shown--; }
+  if (following) showGuess(guesses.length - 1);
+  else updateNav();
+}
+
+function showGuess(i) {
+  shown = i;
+  const e = guesses[i];
+  $("shot").hidden = !e;
+  if (e) $("shot").src = e.picture;
+  $("last").innerHTML = e ? e.html : "Nothing photographed yet.";
+  $("last").classList.toggle("muted", !e);
+  try {
+    viewer ??= new Part3D($("part3d"), $("part3d_note"));
+    if (e) viewer.show(e.part, e.colour?.rgb, /^trans/i.test(e.colour?.name || ""));
+    else viewer.clear();
+  } catch (err) {   // no WebGL, or three.js didn't load
+    console.error(err);
+    $("part3d_note").textContent = "3D view not available in this browser";
+  }
+  updateNav();
+}
+
+function updateNav() {
+  $("prev").disabled = shown <= 0;
+  $("next").disabled = shown < 0 || shown >= guesses.length - 1;
+  $("latest").setAttribute("aria-pressed", String(following));
+  $("guess_pos").textContent = !guesses.length ? "" : `Guess ${shown + 1} of ${guesses.length}` +
+    (following ? " (following the newest)" : shown < guesses.length - 1 ? ` · ${guesses.length - 1 - shown} newer` : "");
+}
+
+$("prev").addEventListener("click", () => { following = false; if (shown > 0) showGuess(shown - 1); });
+$("next").addEventListener("click", () => { following = false; if (shown < guesses.length - 1) showGuess(shown + 1); });
+$("latest").addEventListener("click", () => { following = true; showGuess(guesses.length - 1); });
+
+function guessText(pc) {
   const a = pc.answer, part = a.parts[0], colour = a.colours[0], t = pc.p;
   const truth = t.part === "not_lego" ? "not a LEGO piece" : `${t.part} ${t.colour}`;
   const verdict = pc.partOk === undefined ? `It was ${truth}.`
     : pc.partOk && pc.colourOk ? `<span class="right">✓ Right: it was ${truth}.</span>`
     : `<span class="wrong">✗ It was ${truth}.</span>`;
   const name = part ? `${part.id} ${esc(part.name || "")}` : "no answer";
-  $("last").innerHTML = `<img alt="" src="${pc.picture.toDataURL("image/jpeg", 0.85)}">` +
-    `<div class="bin">→ ${esc(pc.bin)}</div><div>${esc(pc.reason)}</div>` +
+  return `<div class="bin">→ ${esc(pc.bin)}</div><div>${esc(pc.reason)}</div>` +
     (part ? `<div class="alt">Guess: ${name} · ${pct(part.score)}` +
       (colour ? `, <span class="swatch" style="background:${css(colour.rgb)}"></span>${esc(colour.name)} · ${pct(colour.score)}` : "") + "</div>" : "") +
     `<div>${verdict}</div>`;
@@ -421,13 +478,13 @@ function drawOverview() {
 }
 
 function drawCameraBoxes() {
-  g.font = "12px system-ui"; g.strokeStyle = "rgba(255,255,255,.7)"; g.lineWidth = 1;
+  g.font = `${12 * K}px system-ui`; g.strokeStyle = "rgba(255,255,255,.7)"; g.lineWidth = K;
   g.beginPath(); g.moveTo(sim.camera / 2, 0); g.lineTo(sim.camera / 2, sim.camera); g.stroke();
   for (const pc of pieces) {
     const box = solidBox(pc);
     if (box[2] < 0 || box[0] > sim.camera) continue;
-    if (pc.answer) drawTag(g, box, pc.answer, 3);   // after the guess: box in the guessed colour, "part colour"
-    else { g.strokeStyle = "rgba(255,255,255,.8)"; g.lineWidth = 2; g.strokeRect(box[0], box[1], box[2] - box[0], box[3] - box[1]); }
+    if (pc.answer) drawTag(g, box, pc.answer, 3 * K);   // after the guess: box in the guessed colour, "part colour"
+    else { g.strokeStyle = "rgba(255,255,255,.8)"; g.lineWidth = 2 * K; g.strokeRect(box[0], box[1], box[2] - box[0], box[3] - box[1]); }
   }
 }
 
@@ -474,8 +531,8 @@ $("reset").addEventListener("click", () => {
   clearScore();
   showScore();
   $("log").replaceChildren();
-  $("last").textContent = "Nothing photographed yet.";
-  $("last").classList.add("muted");
+  guesses = []; following = true;
+  showGuess(-1);
   newDeck();
   batch = [];
   if (upcoming && !upcoming.ks.every((k) => allowed(sim.pieces[k]))) upcoming = null;
@@ -497,5 +554,6 @@ document.querySelectorAll("input[name=model]").forEach((r) => r.addEventListener
   $("sure").value = Math.round(100 * (bk ? rules.confidence_needed_brickognize : labels?.rules?.confidence_needed ?? 0.85));
   $("sure").dispatchEvent(new Event("input"));
 }));
+updateNav();
 $("go").disabled = $("reset").disabled = true;
 setup().then(() => ($("reset").disabled = false));
