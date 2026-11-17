@@ -152,7 +152,21 @@ class Machine3D {
       <geom name="rail2" type="box" pos="0 ${-bw - 0.01} 0.03" size="${bl} 0.01 0.05"/>
       ${bodies.join("")}</worldbody></mujoco>`;
     const mj = this.mj;
-    this.model = mj.MjModel.from_xml_string(xml);
+    try {
+      this.model = mj.MjModel.from_xml_string(xml);
+    } catch (e) {
+      // a part model the physics can't use (it happens with odd LDraw files): find it, and go without it
+      const ok = slots.filter((p) => {
+        try {
+          mj.MjModel.from_xml_string(`<mujoco><asset><mesh name="m" vertex="${f(p.verts)}" face="${p.faces.join(" ")}" ` +
+            `inertia="convex"/></asset><worldbody><body><freejoint/><geom type="mesh" mesh="m" density="1000"/></body></worldbody></mujoco>`).delete();
+          return true;
+        } catch { console.warn("left out a part the physics can't use:", p.part?.id); return false; }
+      });
+      if (ok.length === slots.length || !ok.length) throw e;
+      this.data = null;
+      return this.build(ok);
+    }
     this.data = new mj.MjData(this.model);
     const id = (type, name) => mj.mj_name2id(this.model, mj.mjtObj[type].value, name);
     const bj = id("mjOBJ_JOINT", "beltslide");
