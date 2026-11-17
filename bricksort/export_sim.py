@@ -2,9 +2,9 @@
 sorting machine's camera sees them.
 
 Run:  python -m bricksort.export_sim                 (needs the 3D parts; the pictures are kept in git)
-      python -m bricksort.export_sim 400 800 1440    (how many pieces the model knows, then how many
+      python -m bricksort.export_sim 400 800 1080    (how many pieces the model knows, then how many
                                                       from every LEGO part, and the camera picture's
-                                                      size in pixels; default 400, 800 and 1440)
+                                                      size in pixels; default 400, 800 and 1080)
 
 The camera is the sorting machine's camera, made sharper: the website photographs pieces at this
 size, then shrinks the photo to what the 720-pixel machine camera would see before the model
@@ -75,7 +75,7 @@ def _cutout(frame, empty):
     return rgba.clip(0, 255).astype(np.uint8), solid
 
 
-def main(n_known=400, n_any=800, res=1440):
+def main(n_known=400, n_any=800, res=1080):
     global CAM_RES
     CAM_RES = conveyor.CAM_RES = res   # the camera renders at this size (the scene's own setting)
     rng = np.random.default_rng(7)
