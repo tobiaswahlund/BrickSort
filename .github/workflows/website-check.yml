@@ -1,0 +1,32 @@
+name: Website check
+
+# A quick run of the website's sorting machine export (export_parts3d.py) on pull requests that
+# change it or what it uses, so a broken export shows up before it reaches the website build on main.
+# Uses the real LDraw library and Rebrickable tables, but only 50 extra parts and no trained model.
+on:
+  pull_request:
+    paths: ["bricksort/export_parts3d.py", "bricksort/catalog.py", "bricksort/ldraw.py", "bricksort/belts.py",
+            "bricksort/machine_setup.py", "bricksort/sorter/conveyor.py", ".github/workflows/pages.yml",
+            ".github/workflows/website-check.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy pillow   # as the website build: no MuJoCo, no torch
+      - run: |
+          python -c "
+          from bricksort import export_parts3d as e
+          cat = e.export('_check', None, max_extra=50)
+          assert len(cat['parts']) >= 40, len(cat['parts'])
+          assert cat['colours'] and cat['machine']['lamps']
+          "
+          ls -la _check | head
