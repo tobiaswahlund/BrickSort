@@ -6,7 +6,7 @@ name: Website
 on:
   push:
     branches: [main]
-    paths: ["web/**", "bricksort/export_web.py", "bricksort/sorter/rules.py", "defaults/**", "bricksort/model.py", ".github/workflows/pages.yml"]
+    paths: ["web/**", "bricksort/export_web.py", "bricksort/export_parts3d.py", "bricksort/ldraw.py", "bricksort/sorter/rules.py", "defaults/**", "bricksort/model.py", ".github/workflows/pages.yml"]
   release:
     types: [published]
   workflow_dispatch:
@@ -32,6 +32,8 @@ jobs:
       - run: pip install numpy pillow onnx==1.23.2
       - run: python -m bricksort.get_model
       - run: python -m bricksort.export_web _site/model
+      # the live sorting machine: parts (LDraw 3D models), their colours, the belt and lamps
+      - run: python -m bricksort.export_parts3d _site/machine _site/model/labels.json
       - run: |
           cp -r web/* _site/
           cp bricksort/assets/logo.png _site/logo.png

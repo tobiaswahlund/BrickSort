@@ -1,22 +1,18 @@
-// The virtual sorting machine in the browser. Pieces (pictures made by bricksort/export_sim.py from
-// the 3D sorting machine) ride the belt under the camera. As a piece crosses the middle line the
-// camera picture is cropped around it, the model guesses, the bin is chosen with the same rules as
-// bricksort/sorter/rules.py (the default bins), and at the end of the belt it drops into that bin.
-// The pieces come in batches picked at random from every piece picture (only the batch's pictures are
-// loaded); when a whole batch has left the belt the next one, already loaded, comes on.
+// The sorting machine, simulated live in your browser: pieces are dropped onto a moving belt (the same
+// MuJoCo physics as the desktop app's virtual sorting machine), the camera above the belt takes a
+// picture every frame, the sorter finds the pieces in it, photographs each as it crosses the middle
+// line, the model guesses, the bin is chosen with the same rules as bricksort/sorter/rules.py (the
+// default bins), and at the end of the belt a flap sends the piece to that bin, as on the machine.
+// Nothing here knows what a piece is except the simulation itself (used only to score the guesses).
 "use strict";
 
-const cam = $("camera"), view = $("overview"), statusLine = $("status");
-const g = cam.getContext("2d", { willReadFrequently: true }), o = view.getContext("2d");
-const BELT_HALF_LEN = 2.0, SPEED = 0.22, SPACING_MIN = 0.4, SPACING_EXTRA = 0.3;   // as sorter/conveyor.py
+const statusLine = $("status"), cam = $("camera"), g = cam.getContext("2d");
 const BIN_COLOURS = ["#d95a4c", "#4d8cd9", "#f2bf40", "#73bf66", "#b373cc", "#f28c33", "#66cccc", "#999", "#4d4d4d"];
-
-const BATCH = 20;   // pieces per batch: their pictures are loaded together
+const RES = 1080;              // the camera picture, in pixels (the machine's own camera has 720)
 const BRICKOGNIZE_GAP = 1.1;   // seconds between requests to brickognize.com (it's someone else's free service)
 
-let sim = null, ppu = 0, belt = null, light = null, empty = null;
-let rules = null, running = false, beltPos = 0, last = null, pieces = [], nextGap = 0, falling = [];
-let run = 0;   // goes up on Reset, so answers for pieces from before the reset are dropped
+let cat = null, M = null, machine = null, detector = null, tracker = null, K = 1, pxPerMm = 1;
+let rules = null, running = false, run = 0;   // run goes up on Reset: answers from before are dropped
 const counts = {}, score = {};
 function clearScore() {
   Object.assign(score, { sorted: 0, right: 0, rest: 0, wrong: 0, known: 0, part: 0, colour: 0 });
@@ -120,21 +116,39 @@ async function loadImage(url) {
 
 async function setup() {
   await loadModel(statusLine);
+  const modelText = statusLine.textContent;
   if (labels) {
     labels.parts.forEach((p) => facts.set(p.id, p));
     const byId = new Map(labels.colours.map((c) => [c.id, c.name]));
     labels.colours.forEach((c) => countsAs.set(c.name.toLowerCase(), byId.get(c.counts_as) || c.name));
   }
-  sim = await (await fetch("sim/sim.json", { cache: "no-cache" })).json();
-  ppu = sim.px_per_mm * 100;
-  [belt, light, empty] = await Promise.all(["sim/belt.png", "sim/light.png", "sim/empty.jpg"].map(loadImage));
   setRules();
-  setupFilters();
-  newDeck();
-  await nextBatch();
-  draw();
-  $("go").disabled = false;
-  statusLine.textContent += " Press Start.";
+  try {
+    statusLine.textContent = `${modelText} Loading the sorting machine (the physics engine is about 11 MB) …`;
+    cat = await (await fetch("machine/catalogue.json", { cache: "no-cache" })).json();
+    M = cat.machine;
+    cam.width = cam.height = RES;
+    K = RES / M.machine_camera;
+    pxPerMm = M.machine_camera / (2 * M.camera_height * Math.tan((M.fovy / 2) * Math.PI / 180) * 100);
+    machine = new Machine3D(M, await loadImage("machine/belt.png"), RES, $("overview"));
+    machine.setBins(binNames(), BIN_COLOURS);
+    await machine.loadPhysics();
+    setupFilters();
+    newDeck();
+    await nextPool(true);
+    statusLine.textContent = `${modelText} Learning what the empty belt looks like …`;
+    await new Promise((ok) => setTimeout(ok, 0));
+    detector = new Detector(K);
+    detector.learnBackground(machine.emptyFrames());
+    tracker = new Tracker(M.machine_camera);
+    statusLine.textContent = `${modelText} Press Start.`;
+    draw(null);
+    $("go").disabled = false;
+  } catch (e) {
+    console.error(e);
+    statusLine.textContent = `${modelText} The sorting machine couldn't start in this browser (${e.message}). ` +
+      "It needs WebGL and WebAssembly, and a computer rather than a phone works best.";
+  }
 }
 
 function setRules() {
@@ -146,18 +160,19 @@ function setRules() {
 }
 
 // ------------------------------------------------------------------ which pieces come
-// deck: every piece allowed by the filters, shuffled; batches are dealt from it, so each piece
-// comes once before any piece comes twice. A new shuffle starts when the deck runs out.
-let deck = [], batch = [], upcoming = null, loadingNext = false;
-const cache = new Map();   // piece number -> its loaded picture (kept, so Reset needs no loading)
-const sprite = (k) => cache.get(k);
+// The machine holds a set of pieces at a time (as the desktop app: a fresh random set every so many
+// pieces). deck: every part allowed by the filters, shuffled; sets are dealt from it, so each part
+// comes once before any part comes twice.
+let deck = [], upcoming = null, swapping = false, nextGap = 0, nextSlot = null;
+const shapes = new Map();   // file -> part shape (kept: a part that comes again needs no loading)
 
 const knownOnly = () => $("known").checked;
-let colourOk = new Set();   // the colours ticked in the colour menu
-const allowed = (p) => (!knownOnly() || p.known) && colourOk.has(p.colour);
+let colourOk = new Set();   // colour ids ticked in the colour menu
+const coloursOf = (p) => p.colours.filter(([c]) => colourOk.has(c));
+const allowed = (p) => (!knownOnly() || p.known) && coloursOf(p).length > 0;
 
 function newDeck() {
-  deck = sim.pieces.map((p, k) => k).filter((k) => allowed(sim.pieces[k]));
+  deck = cat.parts.map((p, i) => i).filter((i) => allowed(cat.parts[i]));
   for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -165,278 +180,327 @@ function newDeck() {
   showPool();
 }
 
-function deal() {
-  // the next batch's pieces, and their pictures loading (in the background)
-  const n = sim.pieces.filter(allowed).length;
-  if (!n) return null;
-  const ks = [];
-  while (ks.length < Math.min(BATCH, n)) {
-    if (!deck.length) newDeck();
-    const k = deck.pop();
-    if (!ks.includes(k)) ks.push(k);
+async function shapeOf(file) {
+  if (!shapes.has(file)) {
+    shapes.set(file, fetch("machine/parts/" + file).then((r) => {
+      if (!r.ok) throw new Error(`no ${file}`);
+      return r.arrayBuffer();
+    }).then(partShape).catch(() => null));
   }
-  const ready = Promise.all(ks.map(async (k) => {
-    if (!cache.has(k)) cache.set(k, await loadImage("sim/" + sim.pieces[k].file).catch(() => null));
-  })).then(() => ks.filter((k) => cache.get(k)));
-  return { ks, ready };
+  return shapes.get(file);
 }
 
-async function nextBatch() {
-  // the waiting batch goes on the belt (loading it first if it isn't yet), and the one after starts loading
-  if (loadingNext) return;
-  loadingNext = true;
+function deal() {
+  // the next set of parts, their 3D models loading in the background
+  const n = cat.parts.filter(allowed).length;
+  if (!n) return null;
+  const picked = [];
+  while (picked.length < Math.min(M.pool, n)) {
+    if (!deck.length) newDeck();
+    const i = deck.pop();
+    if (!picked.includes(i)) picked.push(i);
+  }
+  const ready = Promise.all(picked.map(async (i) => ({ part: cat.parts[i], shape: await shapeOf(cat.parts[i].file) })))
+    .then((list) => list.filter((s) => s.shape));
+  return { picked, ready };
+}
+
+async function nextPool(first = false) {
+  // the waiting set goes into the machine (loading it first if needed); the one after starts loading
+  if (swapping) return;
+  swapping = true;
   try {
     const b = upcoming || deal();
     upcoming = null;
-    if (!b) { batch = []; showPool(); return; }
-    if (!b.done) $("pieces_status").textContent = "Loading the next pieces …";
-    batch = (await b.ready).filter((k) => allowed(sim.pieces[k]));
+    if (!b) { showPool(); return; }
+    if (!first) $("pieces_status").textContent = "Loading the next set of pieces …";
+    const slots = (await b.ready).filter((s) => allowed(s.part)).map((s) => ({ ...s.shape, part: s.part }));
+    if (slots.length) machine.build(slots);
+    nextSlot = null;
     upcoming = deal();
-    upcoming?.ready.then(() => (upcoming && (upcoming.done = true)));
     showPool();
-  } finally { loadingNext = false; }
+  } finally { swapping = false; }
 }
 
 function showPool() {
-  const n = sim.pieces.filter(allowed).length;
+  const n = cat.parts.filter(allowed).length;
   $("pieces_status").textContent = !n ? "No pieces match: tick more colours, or untick \"only pieces the model knows\"."
-    : `${n} of ${sim.pieces.length} pieces can come; they come in random batches of up to ${BATCH}.`;
+    : `${n} of ${cat.parts.length} LEGO parts can come (${cat.parts.filter((p) => p.known && allowed(p)).length} the model knows); ` +
+      `the machine holds a random set of ${M.pool} at a time.`;
 }
 
 function filtersChanged() {
-  // new rules from now on: the pieces already on the belt stay, the rest of this batch and the next follow the filters
   newDeck();
-  batch = batch.filter((k) => allowed(sim.pieces[k]));
-  if (upcoming && !upcoming.ks.every((k) => allowed(sim.pieces[k]))) upcoming = null;
-  if (!upcoming) upcoming = deal();
-  if (!batch.length && !pieces.length) nextBatch();
+  if (upcoming && !upcoming.picked.every((i) => allowed(cat.parts[i]))) upcoming = deal();
+  nextSlot = null;
 }
 
 function setupFilters() {
-  const known = sim.pieces.filter((p) => p.known).length;
-  $("known").checked = false;
-  if (known === sim.pieces.length) {   // older piece pictures: all are pieces the model knows
-    $("known").checked = $("known").disabled = true;
-    $("known_label").title = "All the piece pictures here are pieces the model knows";
-  }
-  $("known").addEventListener("change", filtersChanged);
-  const byCount = new Map();
-  sim.pieces.forEach((p) => byCount.set(p.colour, (byCount.get(p.colour) || 0) + 1));
-  const rgb = new Map((labels?.colours || []).map((c) => [c.name.toLowerCase(), c.rgb]));
-  sim.pieces.forEach((p) => p.rgb && !rgb.has(p.colour.toLowerCase()) && rgb.set(p.colour.toLowerCase(), p.rgb));
-  const names = [...byCount.keys()].sort((a, b) => byCount.get(b) - byCount.get(a) || a.localeCompare(b));
-  colourOk = new Set(names);
-  $("colour_list").innerHTML = names.map((n) =>
-    `<label><input type="checkbox" value="${esc(n)}" checked><span class="swatch" style="background:${css(rgb.get(n.toLowerCase()))}"></span>` +
-    `${esc(n)} <span class="muted">(${byCount.get(n)})</span></label>`).join("");
+  const n = new Map();
+  cat.parts.forEach((p) => p.colours.forEach(([c]) => n.set(c, (n.get(c) || 0) + 1)));
+  const ids = [...n.keys()].sort((a, b) => n.get(b) - n.get(a) || cat.colours[a][0].localeCompare(cat.colours[b][0]));
+  colourOk = new Set(ids);
+  $("colour_list").innerHTML = ids.map((c) => {
+    const [name, rgb] = cat.colours[c];
+    return `<label><input type="checkbox" value="${c}" checked><span class="swatch" style="background:${css(rgb)}"></span>` +
+      `${esc(name)} <span class="muted">(${n.get(c)})</span></label>`;
+  }).join("");
   const boxes = () => [...$("colour_list").querySelectorAll("input")];
   const update = () => {
-    colourOk = new Set(boxes().filter((b) => b.checked).map((b) => b.value));
-    $("colours_text").textContent = colourOk.size === names.length ? "all" : colourOk.size === 0 ? "none"
-      : colourOk.size <= 3 ? [...colourOk].join(", ") : `${colourOk.size} of ${names.length}`;
+    colourOk = new Set(boxes().filter((b) => b.checked).map((b) => Number(b.value)));
+    const names = [...colourOk].map((c) => cat.colours[c][0]);
+    $("colours_text").textContent = colourOk.size === ids.length ? "all" : colourOk.size === 0 ? "none"
+      : colourOk.size <= 3 ? names.join(", ") : `${colourOk.size} of ${ids.length}`;
     filtersChanged();
   };
   $("colour_list").addEventListener("change", update);
   $("colours_all").addEventListener("click", () => { boxes().forEach((b) => (b.checked = true)); update(); });
   $("colours_none").addEventListener("click", () => { boxes().forEach((b) => (b.checked = false)); update(); });
+  $("known").addEventListener("change", filtersChanged);
 }
 
-// ------------------------------------------------------------------ the belt
-function spawn() {
-  // the next piece of the batch as soon as there's room behind the last one (as conveyor.py maybe_spawn);
-  // when the batch is used up and has left the belt, the next batch comes
-  if (!batch.length) {
-    if (!pieces.length) nextBatch();
+function pickColour(part) {
+  // one of the colours this part is really made in (common ones more often), among those ticked
+  const options = coloursOf(part), total = options.reduce((s, [, w]) => s + w, 0);
+  let r = Math.random() * total;
+  for (const [c, w] of options) if ((r -= w) <= 0) return c;
+  return options[options.length - 1][0];
+}
+
+function maybeSpawn() {
+  // the next piece as soon as there's room behind the last one (as conveyor.maybe_spawn)
+  if (swapping) return;
+  if (machine.since >= M.refresh_after || !machine.pieces.some((p) => allowed(p.part))) {
+    if (!machine.onBelt()) nextPool();   // a fresh set once the belt has run empty
     return;
   }
-  const k = batch[batch.length - 1], p = sim.pieces[k];
-  const halfW = p.w / 2 / ppu, halfH = p.h / 2 / ppu, x = -BELT_HALF_LEN + 0.2 + halfW;
-  const newest = pieces[pieces.length - 1];
-  if (newest && newest.x - newest.halfW < x + halfW + nextGap) return;
-  const room = Math.max(0, (sim.belt_bottom - sim.belt_top) / 2 / ppu - halfH - 0.05);
-  batch.pop();
-  pieces.push({ k, p, x, y: (Math.random() * 2 - 1) * room * 0.85, halfW, halfH, run });
-  nextGap = SPACING_MIN + Math.min(-Math.log(1 - Math.random()) * SPACING_EXTRA, 4 * SPACING_EXTRA);
-}
-
-// where a piece's picture goes in the camera picture (camera above x = 0)
-const camX = (pc) => sim.camera / 2 + pc.x * ppu - pc.p.w / 2;
-const camY = (pc) => sim.camera / 2 - pc.y * ppu - pc.p.h / 2;
-const solidBox = (pc) => [camX(pc) + pc.p.solid[0], camY(pc) + pc.p.solid[1], camX(pc) + pc.p.solid[2], camY(pc) + pc.p.solid[3]];
-
-function drawCamera() {
-  g.globalCompositeOperation = "source-over";
-  g.drawImage(empty, 0, 0);
-  const top = sim.belt_top, h = sim.belt_bottom - sim.belt_top, P = sim.period;
-  const shift = ((beltPos * ppu) % P + P) % P;
-  for (let x = shift - P; x < sim.camera; x += P) g.drawImage(belt, Math.round(x), top);
-  g.globalCompositeOperation = "multiply";   // the lamps' light stays put while the belt moves under it
-  g.drawImage(light, 0, top, sim.camera, h);
-  g.globalCompositeOperation = "source-over";
-  for (const pc of pieces) {
-    const x = camX(pc);
-    if (x < sim.camera && x + pc.p.w > 0) g.drawImage(sprite(pc.k), Math.round(x), Math.round(camY(pc)));
+  if (nextSlot === null) {
+    const free = machine.pieces.map((p, k) => k).filter((k) => machine.pieces[k].state === "parked" && allowed(machine.pieces[k].part));
+    if (!free.length) return;
+    nextSlot = free[Math.floor(Math.random() * free.length)];
+    nextGap = M.spacing_min + Math.min(-Math.log(1 - Math.random()) * M.spacing_extra, 4 * M.spacing_extra);
   }
+  const p = machine.pieces[nextSlot];
+  if (!machine.roomFor(p.r, nextGap)) return;
+  const c = pickColour(p.part), [name, rgb] = cat.colours[c];
+  machine.spawn(nextSlot, { name, rgb }, { part: p.part.id, colour: name, category: p.part.category, known: p.part.known });
+  nextSlot = null;
 }
 
-function photograph(pc) {
-  // a square around the piece, as sorter/detector.py crop(): longest side + 15%
-  const [x0, y0, x1, y1] = solidBox(pc), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-  const half = Math.max(x1 - x0, y1 - y0) / 2 * 1.15 + 6, c = document.createElement("canvas");
+// ------------------------------------------------------------------ the camera and the sorter
+const clean = document.createElement("canvas");   // the latest camera picture, without boxes drawn on it
+clean.width = clean.height = RES;
+let lastBlobs = [], orders = [];
+
+function photograph(blob) {
+  // a square around the object, as sorter/detector.py crop(): longest side + 15%, from the full picture
+  const cx = ((blob.x0 + blob.x1) / 2) * K, cy = ((blob.y0 + blob.y1) / 2) * K;
+  const half = (longSide(blob) / 2 * 1.15 + 6) * K, c = document.createElement("canvas");
   c.width = c.height = Math.round(2 * half);
-  c.getContext("2d").drawImage(cam, cx - half, cy - half, 2 * half, 2 * half, 0, 0, c.width, c.height);
+  const cg = c.getContext("2d");
+  cg.fillStyle = "#000";
+  cg.fillRect(0, 0, c.width, c.height);
+  cg.drawImage(clean, cx - half, cy - half, 2 * half, 2 * half, 0, 0, c.width, c.height);
+  return c;
+}
+
+function forModel(picture) {
+  // the photo as the machine's own camera would have taken it (the model learned on those)
+  if (K === 1) return picture;
+  const c = document.createElement("canvas");
+  c.width = c.height = Math.max(1, Math.round(picture.width / K));
+  const cg = c.getContext("2d");
+  cg.imageSmoothingQuality = "high";
+  cg.drawImage(picture, 0, 0, c.width, c.height);
   return c;
 }
 
 // One request to brickognize.com at a time, at most one about every BRICKOGNIZE_GAP seconds. A piece
-// that leaves the belt while it waits isn't sent at all (it goes to Rest: no answer in time).
+// that has reached the end of the belt while waiting isn't sent at all (it went to Rest: no answer in time).
 let brickognizeQueue = Promise.resolve(), lastAsked = 0;
-function askBrickognize(pc) {
+function askBrickognize(d) {
+  const late = () => d.run !== run || machine.time > d.arriveAt;
   const turn = brickognizeQueue.then(async () => {
-    if (pc.gone || pc.run !== run) throw new Error("left the belt before its turn");
+    if (late()) throw new Error("reached the end of the belt before its turn");
     const wait = lastAsked + BRICKOGNIZE_GAP * 1000 - performance.now();
     if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));
-    if (pc.gone || pc.run !== run) throw new Error("left the belt before its turn");
+    if (late()) throw new Error("reached the end of the belt before its turn");
     lastAsked = performance.now();
-    return predictBrickognize(pc.picture);
+    return predictBrickognize(d.picture);
   });
   brickognizeQueue = turn.catch(() => {});
   return turn;
 }
 
-async function decide(pc) {
-  pc.picture = photograph(pc);
-  const brickognize = modelChoice() === "brickognize";
+const MM_PER_STUD = 8, MM_PER_PLATE = 3.2;
+
+function decide(blob, near) {
+  // as machine.py _decide: one picture of the object (and anything too close to separate from it);
+  // the answer comes later (the model or Brickognize take a moment), the belt keeps running meanwhile
+  if (near.length > 1) blob = mergeAll(near);
+  const mmPast = (blob.cx - M.machine_camera / 2) / pxPerMm;
+  const d = { run, picture: photograph(blob), blob, truth: machine.pieceAt(blob.cx * K, blob.cy * K),
+    arriveAt: machine.time + (M.belt_half_len * 100 - mmPast) / (M.speed * 100) };
+  answer(d);
+  return d;
+}
+
+async function answer(d) {
+  const blob = d.blob, brickognize = modelChoice() === "brickognize";
   try {
     if (!brickognize && !session) throw new Error("no model");
-    pc.answer = brickognize ? await askBrickognize(pc) : await predictMine(pc.picture);
+    d.answer = brickognize ? await askBrickognize(d) : await predictMine(forModel(d.picture));
   } catch (e) {
-    console.error(e);
-    pc.answer = { parts: [], colours: [], categories: [], printed: null };
+    if (!/before its turn/.test(e.message)) console.error(e);
+    d.answer = { parts: [], colours: [], categories: [], printed: null };
   }
-  const a = pc.answer, part = a.parts[0], colour = a.colours[0], cat = a.categories[0];
-  [pc.bin, pc.reason] = part
-    ? chooseBin(part.id, part.score, colour?.name || "?", colour?.score || 0, cat?.name || "", cat?.score || 0, a.printed)
-    : [rules.rest_bin, brickognize ? "Brickognize couldn't be reached" : "no answer"];
-  if (pc.gone || pc.run !== run) return;   // already fell off the end (it went to Rest), or Reset was pressed
-  check(pc);
-  showLast(pc);
+  if (d.run !== run) return;
+  const a = d.answer, part = a.parts[0], colour = a.colours[0], cat_ = a.categories[0];
+  d.ready = true;
+  [d.bin, d.reason] = part
+    ? chooseBin(part.id, part.score, colour?.name || "?", colour?.score || 0, cat_?.name || "", cat_?.score || 0, a.printed)
+    : [rules.rest_bin, brickognize ? "Brickognize couldn't be reached in time" : "no answer"];
+  const rest = rules.rest_bin;
+  const bigBits = blob.bits.filter((x) => x >= 0.2 * blob.area);
+  if (d.bin !== rest && bigBits.length >= 2) [d.bin, d.reason] = [rest, `${bigBits.length} pieces lying close together`];
+  const pr = part && facts.get(part.id);
+  if (d.bin !== rest && pr?.length) {
+    const diag = Math.hypot(pr.length * MM_PER_STUD, pr.width * MM_PER_STUD, pr.height * MM_PER_PLATE);
+    if (longSide(blob) / pxPerMm > diag * 1.25 + 4) [d.bin, d.reason] = [rest, `too big to be one ${part.id}: pieces stuck together?`];
+  }
+  if (machine.time < d.arriveAt + 0.6) orders.push(d);   // the flap is told (if it isn't too late)
+  check(d);
+  showLast(d);
 }
 
-function check(pc) {
-  // what the piece really is (only a simulation knows) and which bin it should have gone to
-  const t = pc.p, a = pc.answer;
-  const right = t.part === "not_lego" ? rules.not_lego_bin : chooseBin(t.part, 1, t.colour, 1, t.category, 1)[0];
-  pc.rightBin = right;
-  if (t.part !== "not_lego" && t.known && a.parts[0]) {
+function binFor(t) {
+  // as the desktop's flap: whatever reaches the end close to an announced time goes to that bin
+  orders = orders.filter((o) => o.arriveAt > t - 5);
+  let best = null;
+  for (const o of orders) if (!best || Math.abs(o.arriveAt - t) < Math.abs(best.arriveAt - t)) best = o;
+  if (best && Math.abs(best.arriveAt - t) < 0.6) { orders.splice(orders.indexOf(best), 1); return best; }
+  return null;
+}
+
+function check(d) {
+  // what the piece really was (only the simulation knows) against the guess
+  const t = d.truth, a = d.answer;
+  if (t && t.known && a.parts[0]) {
     score.known++;
-    pc.partOk = samePiece(a.parts[0].id, t.part);
-    pc.colourOk = sameColour(a.colours[0]?.name).toLowerCase() === sameColour(t.colour).toLowerCase();
-    score.part += pc.partOk;
-    score.colour += pc.colourOk;
+    d.partOk = samePiece(a.parts[0].id, t.part);
+    d.colourOk = sameColour(a.colours[0]?.name).toLowerCase() === sameColour(t.colour).toLowerCase();
+    score.part += d.partOk;
+    score.colour += d.colourOk;
   }
 }
 
-function showLast(pc) {
-  const a = pc.answer, part = a.parts[0], colour = a.colours[0], t = pc.p;
-  const truth = t.part === "not_lego" ? "not a LEGO piece" : `${t.part} ${t.colour}`;
-  const verdict = pc.partOk === undefined ? `It was ${truth}.`
-    : pc.partOk && pc.colourOk ? `<span class="right">✓ Right: it was ${truth}.</span>`
-    : `<span class="wrong">✗ It was ${truth}.</span>`;
+// ------------------------------------------------------------------ the guesses, one at a time
+// Every guess is kept (the newest 200); ◀ ▶ step through them, "Latest guess" shows the newest and
+// keeps following new ones.
+const MAX_GUESSES = 200;
+let guesses = [], shown = -1, following = true, viewer = null;
+
+function showLast(d) {
+  guesses.push({ picture: d.picture.toDataURL("image/png"), html: guessText(d), part: d.answer.parts[0]?.id,
+    colour: d.answer.colours[0] });
+  if (guesses.length > MAX_GUESSES) { guesses.shift(); shown--; }
+  if (following) showGuess(guesses.length - 1);
+  else updateNav();
+}
+
+function showGuess(i) {
+  shown = i;
+  const e = guesses[i];
+  $("shot").hidden = !e;
+  if (e) $("shot").src = e.picture;
+  $("last").innerHTML = e ? e.html : "Nothing photographed yet.";
+  $("last").classList.toggle("muted", !e);
+  try {
+    viewer ??= new Part3D($("part3d"), $("part3d_note"));
+    if (e) viewer.show(e.part, e.colour?.rgb, /^trans/i.test(e.colour?.name || ""));
+    else viewer.clear();
+  } catch (err) {   // no WebGL, or three.js didn't load
+    console.error(err);
+    $("part3d_note").textContent = "3D view not available in this browser";
+  }
+  updateNav();
+}
+
+function updateNav() {
+  $("prev").disabled = shown <= 0;
+  $("next").disabled = shown < 0 || shown >= guesses.length - 1;
+  $("latest").setAttribute("aria-pressed", String(following));
+  $("guess_pos").textContent = !guesses.length ? "" : `Guess ${shown + 1} of ${guesses.length}` +
+    (following ? " (following the newest)" : shown < guesses.length - 1 ? ` · ${guesses.length - 1 - shown} newer` : "");
+}
+
+$("prev").addEventListener("click", () => { following = false; if (shown > 0) showGuess(shown - 1); });
+$("next").addEventListener("click", () => { following = false; if (shown < guesses.length - 1) showGuess(shown + 1); });
+$("latest").addEventListener("click", () => { following = true; showGuess(guesses.length - 1); });
+
+
+function guessText(d) {
+  const a = d.answer, part = a.parts[0], colour = a.colours[0], t = d.truth;
+  const truth = t ? `${t.part} ${t.colour}${t.known ? "" : " (a part the model doesn't know)"}` : "";
+  const verdict = !t ? "" : d.partOk === undefined ? `It was ${esc(truth)}.`
+    : d.partOk && d.colourOk ? `<span class="right">✓ Right: it was ${esc(truth)}.</span>`
+    : `<span class="wrong">✗ It was ${esc(truth)}.</span>`;
   const name = part ? `${part.id} ${esc(part.name || "")}` : "no answer";
-  $("last").innerHTML = `<img alt="" src="${pc.picture.toDataURL("image/jpeg", 0.85)}">` +
-    `<div class="bin">→ ${esc(pc.bin)}</div><div>${esc(pc.reason)}</div>` +
+  return `<div class="bin">→ ${esc(d.bin)}</div><div>${esc(d.reason)}</div>` +
     (part ? `<div class="alt">Guess: ${name} · ${pct(part.score)}` +
       (colour ? `, <span class="swatch" style="background:${css(colour.rgb)}"></span>${esc(colour.name)} · ${pct(colour.score)}` : "") + "</div>" : "") +
     `<div>${verdict}</div>`;
 }
 
-function arrived(pc) {
-  if (!pc.bin) { pc.bin = rules.rest_bin; pc.reason = "no answer in time"; }
-  counts[pc.bin] = (counts[pc.bin] || 0) + 1;
+function arrived(p) {
+  // a piece reached the end of the belt: the flap sends it where it was told, else to Rest
+  const o = binFor(machine.time), t = p.truth, rest = rules.rest_bin;
+  const bin = o ? o.bin : rest, reason = o ? o.reason : "the camera missed it, or no answer in time";
+  counts[bin] = (counts[bin] || 0) + 1;
   score.sorted++;
-  const right = pc.rightBin ?? (pc.p.part === "not_lego" ? rules.not_lego_bin : null);
+  const right = chooseBin(t.part, 1, t.colour, 1, t.category, 1)[0];
   let result = "";
-  if (pc.bin === right) { score.right++; result = "✓"; }
-  else if (pc.bin === rules.rest_bin) { score.rest++; result = "set aside"; }
+  if (bin === right) { score.right++; result = "✓"; }
+  else if (bin === rest) { score.rest++; result = "set aside"; }
   else { score.wrong++; result = `✗ should be ${right}`; }
   const li = document.createElement("li");
-  const t = pc.p.part === "not_lego" ? "a non-LEGO object" : `${pc.p.part} ${pc.p.colour}`;
-  li.textContent = `${t} → ${pc.bin}: ${pc.reason}  ${result}`;
+  li.textContent = `${t.part} ${t.colour} → ${bin}: ${reason}  ${result}`;
   $("log").prepend(li);
   while ($("log").children.length > 100) $("log").lastChild.remove();
   showScore();
 }
 
 function showScore() {
+  showBins();
   if (!score.sorted) { $("score").innerHTML = "No pieces sorted yet."; return; }
   const p = (x) => `${x} (${Math.round((100 * x) / score.sorted)}%)`;
-  const acc = score.known ? `<br>Model right about the part ${p2(score.part, score.known)}, the colour ${p2(score.colour, score.known)}` : "";
+  const acc = score.known ? `<br>Model right about the part ${p2(score.part, score.known)}, the colour ${p2(score.colour, score.known)}` +
+    " <span class=\"muted\">(pieces it knows)</span>" : "";
   $("score").innerHTML = `${score.sorted} pieces sorted<br>Right bin: ${p(score.right)}<br>` +
     `Set aside in ${esc(rules.rest_bin)}: ${p(score.rest)}<br>Wrong bin: ${p(score.wrong)}${acc}`;
 }
 const p2 = (x, n) => `${x}/${n} (${Math.round((100 * x) / n)}%)`;
 
-// ------------------------------------------------------------------ drawing the machine from above
-function drawOverview() {
-  const W = view.width, H = view.height, names = binNames();
-  const left = 20, beltEnd = W - 250, s = (beltEnd - left) / (2 * BELT_HALF_LEN);   // px per unit
-  const X = (x) => left + (x + BELT_HALF_LEN) * s, mid = H / 2;
-  const bh = (sim.belt_bottom - sim.belt_top) / ppu / 2 * s;
-  o.clearRect(0, 0, W, H);
-  o.fillStyle = "#2e7a43";
-  o.fillRect(left, mid - bh, beltEnd - left, 2 * bh);
-  o.fillStyle = "#444";
-  o.fillRect(left, mid - bh - 4, beltEnd - left, 4);
-  o.fillRect(left, mid + bh, beltEnd - left, 4);
-  const half = sim.camera / 2 / ppu;
-  o.setLineDash([6, 4]); o.strokeStyle = "#fff"; o.lineWidth = 2;
-  o.strokeRect(X(-half), mid - bh - 8, 2 * half * s, 2 * bh + 16);
-  o.setLineDash([]);
-  o.beginPath(); o.moveTo(X(0), mid - bh); o.lineTo(X(0), mid + bh); o.stroke();
-  o.fillStyle = "#fff"; o.font = "12px system-ui"; o.fillText("camera", X(-half) + 4, mid - bh - 12);
-  for (const pc of pieces) {
-    o.drawImage(sprite(pc.k), X(pc.x) - pc.halfW * s, mid - pc.y * s - pc.halfH * s, pc.p.w / ppu * s, pc.p.h / ppu * s);
-    if (pc.answer && pc.answer.parts[0]) {   // the box follows the piece to the end of the belt
-      const r = [X(pc.x) - pc.halfW * s - 2, mid - pc.y * s - pc.halfH * s - 2, X(pc.x) + pc.halfW * s + 2, mid - pc.y * s + pc.halfH * s + 2];
-      drawTag(o, r, pc.answer, 2);
-    }
-  }
-  // the bins, one under the other at the end of the belt
-  const bx = beltEnd + 70, gap = 3, each = (H - 10 - gap * (names.length - 1)) / names.length;
-  const binY = (i) => 5 + i * (each + gap);
-  names.forEach((n, i) => {
-    o.fillStyle = BIN_COLOURS[i % BIN_COLOURS.length];
-    o.fillRect(bx, binY(i), W - bx - 5, each);
-    o.fillStyle = "#fff"; o.font = "600 13px system-ui";
-    o.fillText(`${n}: ${counts[n] || 0}`, bx + 8, binY(i) + each / 2 + 5);
-  });
-  o.fillStyle = "#555";
-  o.fillRect(beltEnd, mid - 3, 40, 6);   // the flap
-  for (const f of falling) {
-    const i = names.indexOf(f.bin), t = Math.min(1, f.t / 0.6);
-    const x = beltEnd + t * (bx + 20 - beltEnd), y = mid + t * (binY(i) + each / 2 - mid);
-    o.drawImage(sprite(f.k), x - 10, y - 10, 20, 20);
-  }
+function showBins() {
+  $("bins").innerHTML = binNames().map((n, i) =>
+    `<span class="bin_count"><span class="swatch" style="background:${BIN_COLOURS[i % BIN_COLOURS.length]}"></span>${esc(n)}: <b>${counts[n] || 0}</b></span>`).join("");
 }
 
-function drawCameraBoxes() {
-  g.font = "12px system-ui"; g.strokeStyle = "rgba(255,255,255,.7)"; g.lineWidth = 1;
-  g.beginPath(); g.moveTo(sim.camera / 2, 0); g.lineTo(sim.camera / 2, sim.camera); g.stroke();
-  for (const pc of pieces) {
-    const box = solidBox(pc);
-    if (box[2] < 0 || box[0] > sim.camera) continue;
-    if (pc.answer) drawTag(g, box, pc.answer, 3);   // after the guess: box in the guessed colour, "part colour"
-    else { g.strokeStyle = "rgba(255,255,255,.8)"; g.lineWidth = 2; g.strokeRect(box[0], box[1], box[2] - box[0], box[3] - box[1]); }
-  }
-}
+// ------------------------------------------------------------------ drawing
+const decided = new Map();   // track id -> decision, for the boxes on the camera picture
 
-function draw() {
-  drawCamera();
-  // photograph pieces that crossed the middle line (from the clean picture, before boxes are drawn)
-  for (const pc of pieces) if (!pc.asked && pc.x >= 0) { pc.asked = true; decide(pc); }
-  drawCameraBoxes();
-  drawOverview();
+function draw(frame) {
+  if (frame) clean.getContext("2d").putImageData(frame, 0, 0);
+  else clean.getContext("2d").putImageData(machine.photographBelt(), 0, 0);
+  g.drawImage(clean, 0, 0);
+  g.font = `${12 * K}px system-ui`; g.strokeStyle = "rgba(255,255,255,.7)"; g.lineWidth = K;
+  g.beginPath(); g.moveTo(RES / 2, 0); g.lineTo(RES / 2, RES); g.stroke();
+  for (const [id, b] of lastBlobs) {
+    const box = [b.x0 * K, b.y0 * K, b.x1 * K, b.y1 * K], d = decided.get(id);
+    if (d?.ready) drawTag(g, box, d.answer, 3 * K);   // after the guess: box in the guessed colour, "part colour"
+    else { g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 2 * K; g.strokeRect(box[0], box[1], box[2] - box[0], box[3] - box[1]); }
+  }
+  machine.drawOverview();
 }
 
 // ------------------------------------------------------------------ running
@@ -445,18 +509,17 @@ function tick(now) {
   if (!running) return;
   const dt = Math.max(0, Math.min(0.1, (now - (then || now)) / 1000)) * Number($("speed").value);
   then = now;
-  beltPos += SPEED * dt;
-  for (const pc of pieces) pc.x += SPEED * dt;
-  for (const pc of pieces.filter((p) => p.x - p.halfW > BELT_HALF_LEN)) {   // off the end: into its bin
-    pc.gone = true;
-    arrived(pc);
-    falling.push({ k: pc.k, bin: pc.bin, t: 0 });
+  for (const p of machine.step(dt, M.speed)) arrived(p);
+  maybeSpawn();
+  const frame = machine.photographBelt();
+  const blobs = detector.find(frame);
+  for (const [b, near, ids] of tracker.step(blobs, pxPerMm)) {
+    const d = decide(b, near);
+    ids.forEach((id) => decided.set(id, d));
   }
-  pieces = pieces.filter((p) => !p.gone);
-  falling.forEach((f) => (f.t += dt));
-  falling = falling.filter((f) => f.t < 0.6);
-  spawn();
-  draw();
+  lastBlobs = tracker.tracked;
+  for (const id of [...decided.keys()]) if (!tracker.tracks.has(id)) decided.delete(id);
+  draw(frame);
   requestAnimationFrame(tick);
 }
 
@@ -467,20 +530,21 @@ $("go").addEventListener("click", () => {
   if (running) requestAnimationFrame(tick);
 });
 $("reset").addEventListener("click", () => {
-  // start again at once: the belt and the bins emptied, a fresh random batch (from pictures already
-  // loaded where possible), the same settings; keeps running if it was running
+  // start again at once: the belt and the bins emptied, the same set of pieces and settings;
+  // keeps running if it was running
   run++;
-  pieces = []; falling = []; beltPos = 0; nextGap = 0;
+  machine.pieces.forEach((p, k) => machine.hide(k));
+  machine.since = 0;
+  tracker = new Tracker(M.machine_camera);
+  orders = []; lastBlobs = []; nextSlot = null;
+  decided.clear();
   clearScore();
   showScore();
   $("log").replaceChildren();
-  $("last").textContent = "Nothing photographed yet.";
-  $("last").classList.add("muted");
+  guesses = []; following = true;
+  showGuess(-1);
   newDeck();
-  batch = [];
-  if (upcoming && !upcoming.ks.every((k) => allowed(sim.pieces[k]))) upcoming = null;
-  nextBatch().then(draw);
-  draw();
+  draw(null);
 });
 $("back").addEventListener("click", (e) => {
   // back to the page you came from (keeps its place), or the start page when you came from elsewhere
@@ -490,12 +554,13 @@ $("back").addEventListener("click", (e) => {
 });
 $("sure").addEventListener("input", () => {
   $("sure_text").textContent = `${$("sure").value}%`;
-  rules.confidence_needed = $("sure").value / 100;
+  if (rules) rules.confidence_needed = $("sure").value / 100;
 });
 document.querySelectorAll("input[name=model]").forEach((r) => r.addEventListener("change", () => {
   const bk = modelChoice() === "brickognize";
   $("sure").value = Math.round(100 * (bk ? rules.confidence_needed_brickognize : labels?.rules?.confidence_needed ?? 0.85));
   $("sure").dispatchEvent(new Event("input"));
 }));
+updateNav();
 $("go").disabled = $("reset").disabled = true;
-setup().then(() => ($("reset").disabled = false));
+setup().then(() => ($("reset").disabled = !machine?.model));
