@@ -111,7 +111,7 @@ def belt_tile(out):
 def export(out, labels_file, lib=None, others=None, colours_of=None, colour_table=None, settings=None,
            max_extra=MAX_EXTRA, seed=7):
     """others: [{id, name, category}] of other LEGO parts (default: catalog.all_lego_parts);
-    colours_of(part) -> (colour ids, weights) (default: render.real_colors);
+    colours_of(part) -> (colour ids, weights) (default: catalog.real_colors);
     colour_table: {id: (name, rgb)} (default: catalog.colors(include_trans=True))."""
     from . import catalog
     out = Path(out)
@@ -125,10 +125,8 @@ def export(out, labels_file, lib=None, others=None, colours_of=None, colour_tabl
     if colour_table is None:
         colour_table = catalog.colors(include_trans=True)
     if colours_of is None:
-        from .render import real_colors
-
         def colours_of(p):
-            return real_colors(p, colour_table)
+            return catalog.real_colors(p, colour_table)
     extra = [p for p in others if p["id"] not in known_ids]
     random.Random(seed).shuffle(extra)
 

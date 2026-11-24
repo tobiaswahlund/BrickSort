@@ -412,3 +412,36 @@ if __name__ == "__main__":
         build_category_set(int(sys.argv[2]) if len(sys.argv) > 2 else 25)
     else:
         build(int(sys.argv[1]) if len(sys.argv) > 1 else config.TOP_N)
+
+
+_real_colors = None   # {part: {colour id: how many in sets}} (Rebrickable), loaded once
+
+
+def real_colors(part, color_table):
+    """[(colour id, weight)] for the colours this exact part was really made in (Rebrickable's
+    lists of what's in every set). Common colours get picked more often, rare ones still appear."""
+    global _real_colors
+    if _real_colors is None:
+        cache = config.BIG_DIR / "part_color_counts.json"
+        if cache.exists():
+            _real_colors = {p: {int(c): n for c, n in d.items()}
+                            for p, d in json.loads(cache.read_text(encoding="utf-8")).items()}
+        else:
+            _, _, counts = _rebrickable_info()
+            _real_colors = {p: dict(c) for p, c in counts.items()}
+            cache.write_text(json.dumps(_real_colors), encoding="utf-8")
+    counts = {c: n for c, n in _real_colors.get(part["id"], {}).items() if c in color_table}
+    # a model standing in for look-alikes (e.g. 970c00 for all 970cNN hips+legs): their colours count too
+    for pattern, model in MODEL_ALIASES:
+        if model == part["id"]:
+            for pid, cc in _real_colors.items():
+                if re.fullmatch(pattern, pid):
+                    for c, k in cc.items():
+                        if c in color_table:
+                            counts[c] = counts.get(c, 0) + k
+    if not counts:  # no record (e.g. a model used for a look-alike): its listed colours, else grey
+        counts = {c: 1 for c in part.get("colors", []) if c in color_table} or {71: 1, 72: 1}
+    import numpy as np
+    ids = list(counts)
+    w = np.sqrt(np.array([counts[c] for c in ids], float))
+    return ids, w / w.sum()
